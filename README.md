@@ -16,4 +16,6 @@ Potrebbe servire installare `scipy`, `matplotlib` o altro per far funzionare `ge
 
 Mandare DOPO aver mandato `toMesh.sh` o comunque quando si ha `CppToPython`.
 
-ToInsert: controllo sull'esistenza di `CppToPython`.
+Il valore `plotMesh` booleano regola se deve stampare la mesh o no. La mesh viene stampata in `TesinaMOR/CppToPython/Images`.
+
+ToInsert: cosa vogliono dire i valori delle condizioni al contorno? Commenti riga 40 e 47 di PINN.py
