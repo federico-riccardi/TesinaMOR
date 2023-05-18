@@ -35,17 +35,19 @@ os.chdir("CppToPython")
 lib = gedim.ImportLibrary("./release/GeDiM4Py.so")
 config = { 'GeometricTolerance': 1.0e-8 }
 gedim.Initialize(config, lib)
+
+#Dirichlet sui lati e in alto, Neumann sotto
+#EdgesBoundaryCondition: 2 se Neumann, 1 se Dirichlet, a partire da sotto
 domain = { 'SquareEdge': 1.0, 'VerticesBoundaryCondition': [1,1,1,1], 'EdgesBoundaryCondition': [2,1,1,1], 'DiscretizationType': 1, 'MeshCellsMaximumArea': meshSize }
 [meshInfo, mesh] = gedim.CreateDomainSquare(domain, lib)
 
 if plotMesh:
     gedim.PlotMesh(mesh)
 
-
+#BoundaryConditionsType:
 discreteSpace = { 'Order': order, 'Type': 1, 'BoundaryConditionsType': [1,2,3] }
 [problemData, dofs, strongs] = gedim.Discretize(discreteSpace, lib)
 
-#Dirichlet sui lati e in alto, Neumann sotto
 if plotMesh:
     gedim.PlotDofs(mesh, dofs, strongs)
 
