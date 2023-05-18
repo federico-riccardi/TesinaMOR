@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+#%%
 
 #import stuff
 import numpy as np
@@ -12,6 +13,9 @@ import matplotlib.pyplot as plt
 import scipy.io
 from scipy.interpolate import griddata
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+from mpl_toolkits.mplot3d import Axes3D
+from matplotlib import cm
+from matplotlib.ticker import LinearLocator, FormatStrFormatter
 import matplotlib.gridspec as gridspec
 import warnings
 
@@ -63,9 +67,9 @@ output_dim = 1
 class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
-        self.input_layer = nn.Linear(input_dim,5)
-        self.hidden_layer1 = nn.Linear(5,5)
-        self.hidden_layer2 = nn.Linear(5,5)
+        self.input_layer = nn.Linear(input_dim,10)
+        self.hidden_layer1 = nn.Linear(10,10)
+        self.hidden_layer2 = nn.Linear(10,5)
         self.hidden_layer3 = nn.Linear(5,5)
         self.hidden_layer4 = nn.Linear(5,5)
         self.output_layer = nn.Linear(5,output_dim)
@@ -81,20 +85,141 @@ class Net(nn.Module):
         return output
     
 def beta(x,y):
-    return np.array([y*(1-y),0])
+    beta_1 = y*(1-y)
+    beta_2 = torch.zeros((500,1))
+    return torch.cat((beta_1,beta_2), dim=1)
+
+def beta_1(x,y):
+    return y*(1-y)
+
+def beta_2(x,y):
+    return torch.zeros((x.shape[0],1))
     
-def R(x,y,mu_1,mu_2,net): #residuo pde
+def R_pde(x, y, mu_1, mu_2, net): #residuo pde
     u = net(x,y,mu_1,mu_2)
     u_x = torch.autograd.grad(u.sum(), x, create_graph=True)[0]
     u_xx = torch.autograd.grad(u_x.sum(), x, create_graph=True)[0]
     u_y = torch.autograd.grad(u.sum(), y, create_graph=True)[0]
     u_yy = torch.autograd.grad(u_y.sum(), y, create_graph=True)[0]
-    pde = mu_1*(u_xx + u_yy) + beta(x,y)[0]*u_x + beta(x,y)[1]*u_y
+    pde = mu_1*(u_xx + u_yy) + beta_1(x,y)*u_x + beta_2(x,y)*u_y
     return pde
 
+def R_bc_1(x, y, mu_1, mu_2, net): #residuo Neumann bordo 1
+    u = net(x,y,mu_1,mu_2)
+    u_y = torch.autograd.grad(u.sum(), y, create_graph=True)[0]
+    normal_der = u_y
+    return normal_der
+
+def R_bc_2(x, y, mu_1, mu_2, net): #residuo Neumann bordo 1
+    u = net(x,y,mu_1,mu_2)
+    u_x = torch.autograd.grad(u.sum(), x, create_graph=True)[0]
+    normal_der = u_x
+    return normal_der
 
 
 net = Net()
 mse_cost_function = torch.nn.MSELoss() # Mean squared error
 optimizer = torch.optim.Adam(net.parameters())
 
+#PRIMO TENTATIVO: facciamo finta che il problema sia in 4 dimensioni e alleniamo la rete esattamente come nel caso 2d, cioè mu_1 e mu_2 
+#si considerano delle variabili esattamente come x e y
+
+#Data from boundary condition 1:bordo inferiore 2:bordo destro 3: bordo superiore 4: bordo sinistro
+
+#I nodi di Dirichlet non vanno ricreati perché non sono dof, i Neumann invece, come i punti nel dominio, sono dof e quindi per allenare
+#la rete vanno cambiati ad ogni iterazione
+
+mu_1_bc_dir = np.random.uniform(low = mu_1_range[0], high = mu_1_range[1], size=(1,1))*np.ones((500,1))
+mu_2_bc_dir = np.random.uniform(low = mu_2_range[0], high = mu_2_range[1], size=(1,1))*np.ones((500,1))
+
+x_bc_3 = np.random.uniform(low=0.0, high=1.0, size=(500,1))
+y_bc_3 = np.ones((500,1))
+u_bc_3 = np.zeros((500,1))
+
+x_bc_4 = np.zeros((500,1))
+y_bc_4 = np.random.uniform(low=0.0, high=1.0, size=(500,1))
+u_bc_4 = np.zeros((500,1))
+
+iterations = 1000
+for epoch in range(iterations):
+    optimizer.zero_grad()
+    #Loss condizioni al contorno di Dirichlet
+    pt_mu_1_bc_dir = Variable(torch.from_numpy(mu_1_bc_dir).float(), requires_grad = False)
+    pt_mu_2_bc_dir = Variable(torch.from_numpy(mu_2_bc_dir).float(), requires_grad = False)
+
+    pt_x_bc_3 = Variable(torch.from_numpy(x_bc_3).float(), requires_grad = False)
+    pt_y_bc_3 = Variable(torch.from_numpy(y_bc_3).float(), requires_grad = False)
+    pt_u_bc_3 = Variable(torch.from_numpy(u_bc_3).float(), requires_grad = False)
+    net_bc_out_3 = net(pt_x_bc_3, pt_y_bc_3, pt_mu_1_bc_dir, pt_mu_2_bc_dir)
+    mse_u_bc_3 = mse_cost_function(net_bc_out_3, pt_u_bc_3)
+
+    pt_x_bc_4 = Variable(torch.from_numpy(x_bc_4).float(), requires_grad = False)
+    pt_y_bc_4 = Variable(torch.from_numpy(y_bc_4).float(), requires_grad = False)
+    pt_u_bc_4 = Variable(torch.from_numpy(u_bc_4).float(), requires_grad = False)
+    net_bc_out_4 = net(pt_x_bc_4, pt_y_bc_4, pt_mu_1_bc_dir, pt_mu_2_bc_dir)
+    mse_u_bc_4 = mse_cost_function(net_bc_out_4, pt_u_bc_4)
+    
+
+    #Loss nei dof
+    #mu_1 = np.random.uniform(low = mu_1_range[0], high = mu_1_range[1], size=(1,1)) * np.ones((500,1))
+    #mu_2 = np.random.uniform(low = mu_2_range[0], high = mu_2_range[1], size=(1,1)) *np.ones((500,1))
+    mu_1 = mu_1_bc_dir
+    mu_2 = mu_2_bc_dir
+    pt_mu_1 = Variable(torch.from_numpy(mu_1).float(), requires_grad = False)
+    pt_mu_2 = Variable(torch.from_numpy(mu_2).float(), requires_grad = False)
+ 
+    x_collocation = np.random.uniform(low=0.0, high=1.0, size=(500,1))
+    y_collocation = np.random.uniform(low=0.0, high=1.0, size=(500,1))
+    y_bc_1 = np.zeros((500,1))
+    x_bc_2 = np.ones((500,1))
+    u_y_bc_1 = -np.divide(mu_2,mu_1)
+    u_x_bc_2 = np.zeros((500,1))
+    all_zeros = np.zeros((500,1))
+
+    pt_x_collocation = Variable(torch.from_numpy(x_collocation).float(), requires_grad = True)
+    pt_y_collocation = Variable(torch.from_numpy(y_collocation).float(), requires_grad = True)
+    pt_all_zeros = Variable(torch.from_numpy(all_zeros).float(), requires_grad = False)
+
+    pt_y_bc_1 = Variable(torch.from_numpy(y_bc_1).float(), requires_grad = True)
+    pt_u_y_bc_1 = Variable(torch.from_numpy(u_y_bc_1).float(), requires_grad = False)
+
+    pt_x_bc_2 = Variable(torch.from_numpy(x_bc_2).float(), requires_grad = True)    
+    pt_u_x_bc_2 = Variable(torch.from_numpy(u_x_bc_2).float(), requires_grad = False)
+
+
+    #Loss condizioni al contorno di Neumann
+
+    f_out_bc_1 = R_bc_1(pt_x_collocation, pt_y_bc_1, pt_mu_1, pt_mu_2, net)
+    mse_f_bc_1 = mse_cost_function(f_out_bc_1, pt_u_y_bc_1)
+
+    f_out_bc_2 = R_bc_2(pt_x_bc_2, pt_y_collocation, pt_mu_1, pt_mu_2, net)
+    mse_f_bc_2 = mse_cost_function(f_out_bc_2, pt_u_x_bc_2)
+
+    f_out = R_pde(pt_x_collocation, pt_y_collocation, pt_mu_1, pt_mu_2, net)
+    mse_f = mse_cost_function(f_out, pt_all_zeros)
+
+    loss = mse_f + mse_f_bc_1 + mse_f_bc_2 + mse_u_bc_3 + mse_u_bc_4
+
+    loss.backward()
+    optimizer.step()
+
+    with torch.autograd.no_grad():
+        #print(epoch, "Loss:",loss.item())
+        print(mse_f)
+
+
+fig = plt.figure()
+ax = fig.add_subplot(projection='3d')
+x = np.arange(0,1,0.02)
+y = np.arange(0,1,0.02)
+ms_x, ms_y = np.meshgrid(x,y)
+x = np.ravel(ms_x).reshape(-1,1)
+y = np.ravel(ms_y).reshape(-1,1)
+pt_x = Variable(torch.from_numpy(x).float(), requires_grad=True)
+pt_y = Variable(torch.from_numpy(y).float(), requires_grad=True)
+pt_u = net(pt_x, pt_y, 7*torch.ones((pt_x.shape[0],1)), 0.4*torch.ones((pt_y.shape[0],1)))
+u = pt_u.data.cpu().numpy()
+ms_u = u.reshape(ms_x.shape)
+surf = ax.plot_surface(ms_x, ms_y, ms_u, cmap=cm.coolwarm, linewidth=0, antialiased=False)
+fig.savefig('foto.png')
+plt.show()
