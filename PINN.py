@@ -34,11 +34,12 @@ import GeDiM4Py as gedim
 meshSize = 0.01
 order = 2
 plotMesh = True
-iterations = 900
+iterations = 1000
+lam = 0.5 #tra 0 e 1
 #iterations = int(input("please insert iteration:"))
 
 #creo la cartella dove salvare i risultati
-dir = "results/"+str(iterations)
+dir = "results/"+str(iterations)+"/"+str(lam)
 if not os.path.exists(dir):
     os.makedirs(dir)
 
@@ -218,7 +219,7 @@ with open(complete_dir+'/loss.csv', 'w', newline='') as csvfile:
         f_out = R_pde(pt_x_collocation, pt_y_collocation, pt_mu_1, pt_mu_2, net)
         mse_f = mse_cost_function(f_out, pt_all_zeros)
 
-        loss = mse_f + mse_f_bc_1 + mse_f_bc_2 + mse_u_bc_3 + mse_u_bc_4
+        loss = lam*mse_f + (1-lam)*mse_f_bc_1 + (1-lam)*mse_f_bc_2 + (1-lam)*mse_u_bc_3 + (1-lam)*mse_u_bc_4
         writer.writerow({"epoch":epoch, "loss":loss.item()})
         loss.backward()
         optimizer.step()

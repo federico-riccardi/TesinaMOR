@@ -8,6 +8,7 @@ Se dà errore BLAS provare con questo `sudo apt-get install libopenblas-dev`.
 Per mandare da terminale andare nella cartella TesinaMOR attraverso il comando `cd` e scrivere `./toMesh.sh` o `.\toMesh.sh` a seconda del sistema operativo.
 
 Se dà errore "Permission denied" provare `chmod u+x ./toMesh.sh` (può cambiare i permessi solo chi crea il file di solito, ma tentar non nuoce, `comando chmod g+x nomefile`).
+
 ## PINN.py
 
 Per mandare da terminale andare nella cartella TesinaMOR attraverso il comando `cd` e scrivere `./PINN.py` o `.\PINN.py` a seconda del sistema operativo.
@@ -19,3 +20,15 @@ Mandare DOPO aver mandato `toMesh.sh` o comunque quando si ha `CppToPython`.
 Il valore `plotMesh` booleano regola se deve stampare la mesh o no. La mesh viene stampata in `TesinaMOR/CppToPython/Images`.
 
 ToInsert: cosa vogliono dire i valori delle condizioni al contorno? Commenti riga 40 e 47 di PINN.py
+
+### lambda
+
+Parametro che pesa i contributi nella loss.
+
+## plots.py
+
+File Dash che serve per creare i grafici interattivi. Prende i risultati dalla cartella `results` (che non viene pushata perché è nel file `.gitignore`), creata dal file `PINN.py`.
+
+La cartella `results` ha la seguente struttura `results` -> `iterations` -> `lambda` -> `foto.jpg` e `loss.csv`.
+
+Il file va mandato quando esiste la cartella `results`, compare la scritta `Dash is running on http://127.0.0.1:8050/`, copiare il link sul browser e lì appare il grafico.
