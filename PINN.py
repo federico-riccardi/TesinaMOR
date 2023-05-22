@@ -34,16 +34,19 @@ import GeDiM4Py as gedim
 meshSize = 0.01
 order = 2
 plotMesh = True
-iterations = 1000
+iterations = 900
 #iterations = int(input("please insert iteration:"))
 
 #creo la cartella dove salvare i risultati
-dir = str(iterations)
+dir = "results/"+str(iterations)
 if not os.path.exists(dir):
-    os.mkdir(dir)
+    os.makedirs(dir)
+
 complete_dir = os.getcwd()+"/"+dir
 with open(complete_dir+'/loss.csv', 'w', newline='') as csvfile:
-    spamwriter = csv.writer(csvfile, delimiter=' ')
+    fieldnames = ['epoch', 'loss']
+    writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+    writer.writeheader()
 
     os.chdir("CppToPython")
     lib = gedim.ImportLibrary("./release/GeDiM4Py.so")
@@ -216,13 +219,13 @@ with open(complete_dir+'/loss.csv', 'w', newline='') as csvfile:
         mse_f = mse_cost_function(f_out, pt_all_zeros)
 
         loss = mse_f + mse_f_bc_1 + mse_f_bc_2 + mse_u_bc_3 + mse_u_bc_4
-        spamwriter.writerow([epoch, loss.item()])
+        writer.writerow({"epoch":epoch, "loss":loss.item()})
         loss.backward()
         optimizer.step()
 
-        with torch.autograd.no_grad():
+        torch.autograd.no_grad()
             #print(epoch, "Loss:",loss.item())
-            print(mse_f)
+            #print(mse_f)
 
 
 fig = plt.figure()

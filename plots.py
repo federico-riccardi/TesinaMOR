@@ -5,23 +5,31 @@
 from dash import Dash, html, dcc
 import plotly.express as px
 import pandas as pd
+import plotly.graph_objects as go
+import os
 
 app = Dash(__name__)
 
+#fig = go.Figure(go.Scatter(x = df['x'], y = df['y'], name="loss1"), 
+#                layout = go.Layout(title = "Loss of the PINN model", xaxis = {'title':'epoch'}, yaxis = {'title':'loss'}, showlegend=True))
+
+fig = go.Figure(layout = go.Layout(title = "Loss of the PINN model", xaxis = {'title':'epoch'}, yaxis = {'title':'loss'}, showlegend=True))
+
+for folder in os.listdir("results"):
+    df = pd.read_csv("results/"+folder+"/loss.csv")
+    fig.add_trace(go.Scatter(x = df['epoch'], y = df['loss'], name="loss "+folder+" epochs"))
 # assume you have a "long-form" data frame
 # see https://plotly.com/python/px-arguments/ for more options
-df = pd.DataFrame({
-    "Fruit": ["Apples", "Oranges", "Bananas", "Apples", "Oranges", "Bananas"],
-    "Amount": [4, 1, 2, 2, 4, 5],
-    "City": ["SF", "SF", "SF", "Montreal", "Montreal", "Montreal"]
-})
+#df = pd.read_csv('1000/loss.csv', sep = " ")
+#fig = go.Figure(go.Scatter(x = df['x'], y = df['y']))
+#fig=px.line(df, x="x", y="y")
 
-fig = px.bar(df, x="Fruit", y="Amount", color="City", barmode="group")
+
 
 app.layout = html.Div(children=[
-    html.H1(children='Hello Dash'),
+    html.H1(children='Title'),
         html.Div(children='''
-        Dash: A web application framework for your data.
+        Subtitle.
     '''),
 
     dcc.Graph(
@@ -32,3 +40,5 @@ app.layout = html.Div(children=[
 
 if __name__ == '__main__':
     app.run_server(debug=True)
+
+    
