@@ -34,8 +34,19 @@ import GeDiM4Py as gedim
 meshSize = 0.01
 order = 2
 plotMesh = True
-iterations = 1000
-lam = 0.5 #tra 0 e 1
+
+import argparse
+
+# Construct the argument parser
+ap = argparse.ArgumentParser()
+
+# Add the arguments to the parser
+ap.add_argument("--lam")
+ap.add_argument("--iterations")
+args = vars(ap.parse_args())
+iterations = int(args['iterations'])
+lam = float(args['lam']) #tra 0 e 1
+print("lam = "+str(lam))
 #iterations = int(input("please insert iteration:"))
 
 #creo la cartella dove salvare i risultati
