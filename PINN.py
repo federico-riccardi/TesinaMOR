@@ -46,7 +46,9 @@ ap.add_argument("--lam")
 ap.add_argument("--iterations")
 args = vars(ap.parse_args())
 iterations = int(args['iterations'])
+#iterations=3000
 lam = float(args['lam']) #tra 0 e 1
+#lam = 0.1
 tol = 1e-4
 print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
 print("\n")
@@ -126,10 +128,13 @@ with open(complete_dir+'/loss.csv', 'w', newline='') as csvfile:
         return torch.zeros((x.shape[0],1))
     
     def f_pde(x,y,mu_1,mu_2):
+        #f = 32.*mu_1*(y*(1-y) + x*(1-x)) + (1-x)*(16.*y**4 - 32.*y**3 + 16.*y**2)
+        #return f
         return torch.zeros((x.shape[0],1))
-
+    
     def f_bc_1(x,y,mu_1,mu_2):
-        return mu_2
+        #return mu_2
+        return torch.zeros((x.shape[0],1))
 
     def f_bc_2(x,y,mu_1,mu_2):
         return torch.zeros((x.shape[0],1))
@@ -148,7 +153,7 @@ with open(complete_dir+'/loss.csv', 'w', newline='') as csvfile:
         u_xx = torch.autograd.grad(u_x.sum(), x, create_graph=True)[0]
         u_y = torch.autograd.grad(u.sum(), y, create_graph=True)[0]
         u_yy = torch.autograd.grad(u_y.sum(), y, create_graph=True)[0]
-        pde = -mu_1*(u_xx + u_yy) + beta_1(x,y)*u_x + beta_2(x,y)*u_y
+        pde = -mu_1*(u_xx + u_yy) + beta_1(x,y)*u_x + beta_2(x,y)*u_y - (32.*mu_1*(y*(1-y) + x*(1-x)) + (1-x)*(16.*y**4 - 32.*y**3 + 16.*y**2))
         return pde
 
     def R_dir(x,y,mu_1,mu_2,net):
@@ -159,22 +164,8 @@ with open(complete_dir+'/loss.csv', 'w', newline='') as csvfile:
         u_x = torch.autograd.grad(u.sum(), x, create_graph=True)[0]
         u_y = torch.autograd.grad(u.sum(), y, create_graph=True)[0]
         normal_der = mu_1*(u_x*n_x + u_y*n_y)
-
-    def R_bc_1(x, y, mu_1, mu_2, net): 
-        '''residuo Neumann bordo 1'''
-        # Resituisce mu_1 * ∇u • n, che per il bordo 1 corrisponde a -mu_1 * u_y
-        u = net(x,y,mu_1,mu_2)
-        u_y = torch.autograd.grad(u.sum(), y, create_graph=True)[0]
-        normal_der = -mu_1*u_y
         return normal_der
-
-    def R_bc_2(x, y, mu_1, mu_2, net): 
-        '''residuo Neumann bordo 1'''
-        u = net(x,y,mu_1,mu_2)
-        u_x = torch.autograd.grad(u.sum(), x, create_graph=True)[0]
-        normal_der = u_x
-        return normal_der
-
+    
     net = Net()
     mse_cost_function = torch.nn.MSELoss() # Mean squared error
     optimizer = torch.optim.Adam(net.parameters())
@@ -205,7 +196,6 @@ with open(complete_dir+'/loss.csv', 'w', newline='') as csvfile:
         pt_y_collocation = Variable(torch.from_numpy(y_collocation).float(), requires_grad = True)
         #Genero i valori obiettivo
         res_obj = f_pde(x_collocation,y_collocation,pt_mu_1,pt_mu_2)
-        pt_res_obj = Variable(torch.from_numpy(res_obj).float(), requires_grad = False)
         #Calcolo il residuo
         res_out = R_pde(pt_x_collocation, pt_y_collocation, pt_mu_1, pt_mu_2, net)
         mse_pde = mse_cost_function(res_out, res_obj)
@@ -223,10 +213,12 @@ with open(complete_dir+'/loss.csv', 'w', newline='') as csvfile:
         pt_y_collocation = Variable(torch.from_numpy(y_collocation).float(), requires_grad = True)
         #Genero i valori obiettivo
         res_obj = f_bc_1(x_collocation,y_collocation,pt_mu_1,pt_mu_2)
-        pt_res_obj = Variable(torch.from_numpy(res_obj).float(), requires_grad = False)
         #Calcolo il residuo
-        res_out = R_neu(pt_x_collocation, pt_y_collocation, pt_mu_1, pt_mu_2, net, -1, 0)
+        #res_out = R_neu(pt_x_collocation, pt_y_collocation, pt_mu_1, pt_mu_2, net, 0, -1)
+        res_out = R_dir(pt_x_collocation, pt_y_collocation, pt_mu_1, pt_mu_2, net)
         mse_bc_1 = mse_cost_function(res_out, res_obj)
+        print('mse_bc_1:',mse_bc_1)
+        print('res_out[1]',res_out[0])
 
         ##LOSS BORDO 2 ({1}x[0,1]), NEUMANN OMOGENEO
         # Genero i parametri
@@ -241,9 +233,9 @@ with open(complete_dir+'/loss.csv', 'w', newline='') as csvfile:
         pt_y_collocation = Variable(torch.from_numpy(y_collocation).float(), requires_grad = True)
         #Genero i valori obiettivo
         res_obj = f_bc_2(x_collocation,y_collocation,pt_mu_1,pt_mu_2)
-        pt_res_obj = Variable(torch.from_numpy(res_obj).float(), requires_grad = False)
         #Calcolo il residuo
-        res_out = R_neu(pt_x_collocation, pt_y_collocation, pt_mu_1, pt_mu_2, net, 1, 0)
+        #res_out = R_neu(pt_x_collocation, pt_y_collocation, pt_mu_1, pt_mu_2, net, 1, 0)
+        res_out = R_dir(pt_x_collocation, pt_y_collocation, pt_mu_1, pt_mu_2, net)
         mse_bc_2 = mse_cost_function(res_out, res_obj)
 
         ##LOSS BORDO 3 ([0,1]x{1}), DIRICHLET OMOGENEO
@@ -259,7 +251,6 @@ with open(complete_dir+'/loss.csv', 'w', newline='') as csvfile:
         pt_y_collocation = Variable(torch.from_numpy(y_collocation).float(), requires_grad = True)
         #Genero i valori obiettivo
         res_obj = f_bc_3(x_collocation,y_collocation,pt_mu_1,pt_mu_2)
-        pt_res_obj = Variable(torch.from_numpy(res_obj).float(), requires_grad = False)
         #Calcolo il residuo
         res_out = R_dir(pt_x_collocation, pt_y_collocation, pt_mu_1, pt_mu_2, net)
         mse_bc_3 = mse_cost_function(res_out, res_obj)
@@ -277,7 +268,6 @@ with open(complete_dir+'/loss.csv', 'w', newline='') as csvfile:
         pt_y_collocation = Variable(torch.from_numpy(y_collocation).float(), requires_grad = True)
         #Genero i valori obiettivo
         res_obj = f_bc_4(x_collocation,y_collocation,pt_mu_1,pt_mu_2)
-        pt_res_obj = Variable(torch.from_numpy(res_obj).float(), requires_grad = False)
         #Calcolo il residuo
         res_out = R_dir(pt_x_collocation, pt_y_collocation, pt_mu_1, pt_mu_2, net)
         mse_bc_4 = mse_cost_function(res_out, res_obj)
