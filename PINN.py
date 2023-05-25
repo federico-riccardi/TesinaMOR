@@ -83,8 +83,8 @@ with open(complete_dir+'/loss.csv', 'w', newline='') as csvfile:
 
     np.random.seed(1234)
 
-    mu_1_range = [0.1,10.]
-    mu_2_range = [-1., 1.]
+    mu_1_range = [10.,10.]
+    mu_2_range = [1., 1.]
     P = np.array([mu_1_range,mu_2_range])
     input_dim = 2 + P.shape[0] #x, y and parameters
     output_dim = 1
@@ -175,7 +175,44 @@ with open(complete_dir+'/loss.csv', 'w', newline='') as csvfile:
 
 
     for epoch in range(iterations):
+
         optimizer.zero_grad()
+
+        ## LOSS NEI DOF
+        # Genero i parametri
+        mu_1 = np.random.uniform(low = mu_1_range[0], high = mu_1_range[1], size=(n_points,1))
+        pt_mu_1 = Variable(torch.from_numpy(mu_1).float(), requires_grad = False)
+        mu_2 = np.random.uniform(low = mu_2_range[0], high = mu_2_range[1], size=(n_points,1))
+        pt_mu_2 = Variable(torch.from_numpy(mu_2).float(), requires_grad = False)
+        #Genero i punti nel dominio
+        x_collocation = np.random.uniform(low=0.0, high=1.0, size=(n_points,1))
+        pt_x_collocation = Variable(torch.from_numpy(x_collocation).float(), requires_grad = True)
+        y_collocation = np.random.uniform(low=0.0, high=1.0, size=(n_points,1))
+        pt_y_collocation = Variable(torch.from_numpy(y_collocation).float(), requires_grad = True)
+        #Genero i valori obiettivo
+        u_obj = np.zeros((n_points,1))
+        pt_u_obj = Variable(torch.from_numpy(u_obj).float(), requires_grad = False)
+        #Calcolo il residuo
+        u_out = R_pde(pt_x_collocation, pt_y_collocation, pt_mu_1, pt_mu_2, net)
+        mse_pde = mse_cost_function(u_out, pt_u_obj)
+        
+        ##LOSS BORDO 1 ([0,1]x{0}), NEUMANN NON OMOGENEO
+        # Genero i parametri
+        mu_1 = np.random.uniform(low = mu_1_range[0], high = mu_1_range[1], size=(n_points,1))
+        pt_mu_1 = Variable(torch.from_numpy(mu_1).float(), requires_grad = False)
+        mu_2 = np.random.uniform(low = mu_2_range[0], high = mu_2_range[1], size=(n_points,1))
+        pt_mu_2 = Variable(torch.from_numpy(mu_2).float(), requires_grad = False)
+        #Genero i punti sul bordo
+        x_collocation = np.random.uniform(low=0.0, high=1.0, size=(n_points,1))
+        pt_x_collocation = Variable(torch.from_numpy(x_collocation).float(), requires_grad = True)
+        y_collocation = np.zeros((n_points,1))
+        pt_y_collocation = Variable(torch.from_numpy(y_collocation).float(), requires_grad = True)
+        #Genero i valori obiettivo
+        u_y_obj = mu_2
+        pt_u_y_obj = Variable(torch.from_numpy(u_y_obj).float(), requires_grad = False)
+
+
+
         #Loss condizioni al contorno di Dirichlet
         pt_mu_1_bc_dir = Variable(torch.from_numpy(mu_1_bc_dir).float(), requires_grad = False)
         pt_mu_2_bc_dir = Variable(torch.from_numpy(mu_2_bc_dir).float(), requires_grad = False)
@@ -201,17 +238,10 @@ with open(complete_dir+'/loss.csv', 'w', newline='') as csvfile:
         pt_mu_1 = Variable(torch.from_numpy(mu_1).float(), requires_grad = False)
         pt_mu_2 = Variable(torch.from_numpy(mu_2).float(), requires_grad = False)
     
-        x_collocation = np.random.uniform(low=0.0, high=1.0, size=(n_points,1))
-        y_collocation = np.random.uniform(low=0.0, high=1.0, size=(n_points,1))
         y_bc_1 = np.zeros((n_points,1))
         x_bc_2 = np.ones((n_points,1))
         u_y_bc_1 = -np.divide(mu_2,mu_1)
         u_x_bc_2 = np.zeros((n_points,1))
-        all_zeros = np.zeros((n_points,1))
-
-        pt_x_collocation = Variable(torch.from_numpy(x_collocation).float(), requires_grad = True)
-        pt_y_collocation = Variable(torch.from_numpy(y_collocation).float(), requires_grad = True)
-        pt_all_zeros = Variable(torch.from_numpy(all_zeros).float(), requires_grad = False)
 
         pt_y_bc_1 = Variable(torch.from_numpy(y_bc_1).float(), requires_grad = True)
         pt_u_y_bc_1 = Variable(torch.from_numpy(u_y_bc_1).float(), requires_grad = False)
