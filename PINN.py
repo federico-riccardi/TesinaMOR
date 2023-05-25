@@ -175,11 +175,11 @@ with open(complete_dir+'/loss.csv', 'w', newline='') as csvfile:
         y_collocation = np.random.uniform(low=0.0, high=1.0, size=(n_points,1))
         pt_y_collocation = Variable(torch.from_numpy(y_collocation).float(), requires_grad = True)
         #Genero i valori obiettivo
-        u_obj = np.zeros((n_points,1))
-        pt_u_obj = Variable(torch.from_numpy(u_obj).float(), requires_grad = False)
+        res_obj = np.zeros((n_points,1))
+        pt_res_obj = Variable(torch.from_numpy(res_obj).float(), requires_grad = False)
         #Calcolo il residuo
-        u_out = R_pde(pt_x_collocation, pt_y_collocation, pt_mu_1, pt_mu_2, net)
-        mse_pde = mse_cost_function(u_out, pt_u_obj)
+        res_out = R_pde(pt_x_collocation, pt_y_collocation, pt_mu_1, pt_mu_2, net)
+        mse_pde = mse_cost_function(res_out, pt_res_obj)
         
         ##LOSS BORDO 1 ([0,1]x{0}), NEUMANN NON OMOGENEO
         # Genero i parametri
