@@ -51,7 +51,7 @@ print("lam = "+str(lam))
 #iterations = int(input("please insert iteration:"))
 
 #creo la cartella dove salvare i risultati
-dir = "results/"+str(iterations)+"new/"+str(lam)
+dir = "results/"+str(iterations)+"/"+str(lam)
 if not os.path.exists(dir):
     os.makedirs(dir)
 
@@ -128,7 +128,7 @@ with open(complete_dir+'/loss.csv', 'w', newline='') as csvfile:
         u_xx = torch.autograd.grad(u_x.sum(), x, create_graph=True)[0]
         u_y = torch.autograd.grad(u.sum(), y, create_graph=True)[0]
         u_yy = torch.autograd.grad(u_y.sum(), y, create_graph=True)[0]
-        pde = mu_1*(u_xx + u_yy) + beta_1(x,y)*u_x + beta_2(x,y)*u_y
+        pde = -mu_1*(u_xx + u_yy) + beta_1(x,y)*u_x + beta_2(x,y)*u_y
         return pde
 
     def R_bc_1(x, y, mu_1, mu_2, net): 
@@ -211,7 +211,7 @@ with open(complete_dir+'/loss.csv', 'w', newline='') as csvfile:
         y_collocation = np.random.uniform(low=0.0, high=1.0, size=(n_points,1))
         pt_y_collocation = Variable(torch.from_numpy(y_collocation).float(), requires_grad = True)
         #Genero i valori obiettivo
-        u_x_obj = np.zeros((n_points),1)
+        u_x_obj = np.zeros((n_points,1))
         pt_u_x_obj = Variable(torch.from_numpy(u_x_obj).float(), requires_grad = False)
         #Calcolo il residuo
         u_x_out = R_bc_2(pt_x_collocation, pt_y_collocation, pt_mu_1, pt_mu_2, net)
@@ -229,7 +229,7 @@ with open(complete_dir+'/loss.csv', 'w', newline='') as csvfile:
         y_collocation = np.ones((n_points,1))
         pt_y_collocation = Variable(torch.from_numpy(y_collocation).float(), requires_grad = True)
         #Genero i valori obiettivo
-        u_obj = np.zeros((n_points),1)
+        u_obj = np.zeros((n_points,1))
         pt_u_obj = Variable(torch.from_numpy(u_obj).float(), requires_grad = False)
         #Calcolo il residuo
         u_out = net(pt_x_collocation, pt_y_collocation, pt_mu_1, pt_mu_2)
@@ -247,7 +247,7 @@ with open(complete_dir+'/loss.csv', 'w', newline='') as csvfile:
         y_collocation = np.random.uniform(low=0.0, high=1.0, size=(n_points,1))
         pt_y_collocation = Variable(torch.from_numpy(y_collocation).float(), requires_grad = True)
         #Genero i valori obiettivo
-        u_obj = np.zeros((n_points),1)
+        u_obj = np.zeros((n_points,1))
         pt_u_obj = Variable(torch.from_numpy(u_obj).float(), requires_grad = False)
         #Calcolo il residuo
         u_out = net(pt_x_collocation, pt_y_collocation, pt_mu_1, pt_mu_2)
