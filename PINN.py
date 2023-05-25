@@ -47,7 +47,11 @@ ap.add_argument("--iterations")
 args = vars(ap.parse_args())
 iterations = int(args['iterations'])
 lam = float(args['lam']) #tra 0 e 1
-print("lam = "+str(lam))
+tol = 1e-4
+print("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+print("\n")
+print("Mandando una simulazione con {} iterazioni e parametro lambda che vale {}, valutata in {} punti.".format(iterations, lam, n_points))
+print("\n")
 #iterations = int(input("please insert iteration:"))
 
 #creo la cartella dove salvare i risultati
@@ -157,9 +161,9 @@ with open(complete_dir+'/loss.csv', 'w', newline='') as csvfile:
 
     #I nodi di Dirichlet non vanno ricreati perché non sono dof, i Neumann invece, come i punti nel dominio, sono dof e quindi per allenare
     #la rete vanno cambiati ad ogni iterazione
-
-
-    for epoch in range(iterations):
+    loss = 5
+    epoch = 0
+    while epoch < iterations and loss > tol:
 
         optimizer.zero_grad()
 
@@ -260,8 +264,6 @@ with open(complete_dir+'/loss.csv', 'w', newline='') as csvfile:
         optimizer.step()
 
         torch.autograd.no_grad()
-            #print(epoch, "Loss:",loss.item())
-            #print(mse_f)
 
 
 fig = plt.figure()
