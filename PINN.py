@@ -45,10 +45,10 @@ n_points = 5000
 ap.add_argument("--lam")
 ap.add_argument("--iterations")
 args = vars(ap.parse_args())
-iterations = int(args['iterations'])
-#iterations=3000
-lam = float(args['lam']) #tra 0 e 1
-#lam = 0.1
+#iterations = int(args['iterations'])
+iterations=7000
+#lam = float(args['lam']) #tra 0 e 1
+lam = 0.2
 tol = 1e-4
 print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
 print("\n")
@@ -217,8 +217,6 @@ with open(complete_dir+'/loss.csv', 'w', newline='') as csvfile:
         #res_out = R_neu(pt_x_collocation, pt_y_collocation, pt_mu_1, pt_mu_2, net, 0, -1)
         res_out = R_dir(pt_x_collocation, pt_y_collocation, pt_mu_1, pt_mu_2, net)
         mse_bc_1 = mse_cost_function(res_out, res_obj)
-        print('mse_bc_1:',mse_bc_1)
-        print('res_out[1]',res_out[0])
 
         ##LOSS BORDO 2 ({1}x[0,1]), NEUMANN OMOGENEO
         # Genero i parametri
@@ -290,7 +288,7 @@ x = np.ravel(ms_x).reshape(-1,1)
 y = np.ravel(ms_y).reshape(-1,1)
 pt_x = Variable(torch.from_numpy(x).float(), requires_grad=True)
 pt_y = Variable(torch.from_numpy(y).float(), requires_grad=True)
-pt_u = net(pt_x, pt_y, 7*torch.ones((pt_x.shape[0],1)), 0.4*torch.ones((pt_y.shape[0],1)))
+pt_u = net(pt_x, pt_y, 10*torch.ones((pt_x.shape[0],1)), 1*torch.ones((pt_y.shape[0],1)))
 u = pt_u.data.cpu().numpy()
 ms_u = u.reshape(ms_x.shape)
 surf = ax.plot_surface(ms_x, ms_y, ms_u, cmap=cm.coolwarm, linewidth=0, antialiased=False)
