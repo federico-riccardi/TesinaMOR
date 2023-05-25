@@ -41,6 +41,7 @@ import argparse
 ap = argparse.ArgumentParser()
 
 # Add the arguments to the parser
+n_points = 5000
 ap.add_argument("--lam")
 ap.add_argument("--iterations")
 args = vars(ap.parse_args())
@@ -50,7 +51,7 @@ print("lam = "+str(lam))
 #iterations = int(input("please insert iteration:"))
 
 #creo la cartella dove salvare i risultati
-dir = "results/"+str(iterations)+"/"+str(lam)
+dir = "results/"+str(iterations)+"new/"+str(lam)
 if not os.path.exists(dir):
     os.makedirs(dir)
 
@@ -116,7 +117,7 @@ with open(complete_dir+'/loss.csv', 'w', newline='') as csvfile:
         
     def beta(x,y):
         beta_1 = y*(1-y)
-        beta_2 = torch.zeros((500,1))
+        beta_2 = torch.zeros((n_points,1))
         return torch.cat((beta_1,beta_2), dim=1)
 
     def beta_1(x,y):
@@ -161,16 +162,16 @@ with open(complete_dir+'/loss.csv', 'w', newline='') as csvfile:
     #I nodi di Dirichlet non vanno ricreati perché non sono dof, i Neumann invece, come i punti nel dominio, sono dof e quindi per allenare
     #la rete vanno cambiati ad ogni iterazione
 
-    mu_1_bc_dir = np.random.uniform(low = mu_1_range[0], high = mu_1_range[1], size=(1,1))*np.ones((500,1))
-    mu_2_bc_dir = np.random.uniform(low = mu_2_range[0], high = mu_2_range[1], size=(1,1))*np.ones((500,1))
+    mu_1_bc_dir = np.random.uniform(low = mu_1_range[0], high = mu_1_range[1], size=(1,1))*np.ones((n_points,1))
+    mu_2_bc_dir = np.random.uniform(low = mu_2_range[0], high = mu_2_range[1], size=(1,1))*np.ones((n_points,1))
 
-    x_bc_3 = np.random.uniform(low=0.0, high=1.0, size=(500,1))
-    y_bc_3 = np.ones((500,1))
-    u_bc_3 = np.zeros((500,1))
+    x_bc_3 = np.random.uniform(low=0.0, high=1.0, size=(n_points,1))
+    y_bc_3 = np.ones((n_points,1))
+    u_bc_3 = np.zeros((n_points,1))
 
-    x_bc_4 = np.zeros((500,1))
-    y_bc_4 = np.random.uniform(low=0.0, high=1.0, size=(500,1))
-    u_bc_4 = np.zeros((500,1))
+    x_bc_4 = np.zeros((n_points,1))
+    y_bc_4 = np.random.uniform(low=0.0, high=1.0, size=(n_points,1))
+    u_bc_4 = np.zeros((n_points,1))
 
 
     for epoch in range(iterations):
@@ -193,20 +194,20 @@ with open(complete_dir+'/loss.csv', 'w', newline='') as csvfile:
         
 
         #Loss nei dof
-        #mu_1 = np.random.uniform(low = mu_1_range[0], high = mu_1_range[1], size=(1,1)) * np.ones((500,1))
-        #mu_2 = np.random.uniform(low = mu_2_range[0], high = mu_2_range[1], size=(1,1)) *np.ones((500,1))
-        mu_1 = mu_1_bc_dir
-        mu_2 = mu_2_bc_dir
+        mu_1 = np.random.uniform(low = mu_1_range[0], high = mu_1_range[1], size=(1,1)) * np.ones((n_points,1))
+        mu_2 = np.random.uniform(low = mu_2_range[0], high = mu_2_range[1], size=(1,1)) *np.ones((n_points,1))
+        #mu_1 = mu_1_bc_dir
+        #mu_2 = mu_2_bc_dir
         pt_mu_1 = Variable(torch.from_numpy(mu_1).float(), requires_grad = False)
         pt_mu_2 = Variable(torch.from_numpy(mu_2).float(), requires_grad = False)
     
-        x_collocation = np.random.uniform(low=0.0, high=1.0, size=(500,1))
-        y_collocation = np.random.uniform(low=0.0, high=1.0, size=(500,1))
-        y_bc_1 = np.zeros((500,1))
-        x_bc_2 = np.ones((500,1))
+        x_collocation = np.random.uniform(low=0.0, high=1.0, size=(n_points,1))
+        y_collocation = np.random.uniform(low=0.0, high=1.0, size=(n_points,1))
+        y_bc_1 = np.zeros((n_points,1))
+        x_bc_2 = np.ones((n_points,1))
         u_y_bc_1 = -np.divide(mu_2,mu_1)
-        u_x_bc_2 = np.zeros((500,1))
-        all_zeros = np.zeros((500,1))
+        u_x_bc_2 = np.zeros((n_points,1))
+        all_zeros = np.zeros((n_points,1))
 
         pt_x_collocation = Variable(torch.from_numpy(x_collocation).float(), requires_grad = True)
         pt_y_collocation = Variable(torch.from_numpy(y_collocation).float(), requires_grad = True)

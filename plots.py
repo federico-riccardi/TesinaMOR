@@ -28,7 +28,7 @@ for iterations in os.listdir("results"):
 
 
 app.layout = html.Div(children=[
-    html.H1(children='Title'),
+    html.H1(children='Title 1'),
         html.Div(children='''
         Subtitle.
     '''),

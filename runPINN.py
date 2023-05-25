@@ -10,8 +10,6 @@ with open('Configurazioni.yaml') as f:
 
 for iter in data['iterations']:
     for l in data['lam']:
-        #print(iter)
-        #print(l)
         subprocess.run(["./PINN.py", "--lam", str(l), "--iterations", str(iter)])
 
 
