@@ -115,11 +115,6 @@ with open(complete_dir+'/loss.csv', 'w', newline='') as csvfile:
             output = self.output_layer(layer5_out)
             return output
         
-    def beta(x,y):
-        beta_1 = y*(1-y)
-        beta_2 = torch.zeros((n_points,1))
-        return torch.cat((beta_1,beta_2), dim=1)
-
     def beta_1(x,y):
         return y*(1-y)
 
@@ -138,9 +133,10 @@ with open(complete_dir+'/loss.csv', 'w', newline='') as csvfile:
 
     def R_bc_1(x, y, mu_1, mu_2, net): 
         '''residuo Neumann bordo 1'''
+        # Resituisce mu_1 * ∇u • n, che per il bordo 1 corrisponde a -mu_1 * u_y
         u = net(x,y,mu_1,mu_2)
         u_y = torch.autograd.grad(u.sum(), y, create_graph=True)[0]
-        normal_der = u_y
+        normal_der = -mu_1*u_y
         return normal_der
 
     def R_bc_2(x, y, mu_1, mu_2, net): 
@@ -161,17 +157,6 @@ with open(complete_dir+'/loss.csv', 'w', newline='') as csvfile:
 
     #I nodi di Dirichlet non vanno ricreati perché non sono dof, i Neumann invece, come i punti nel dominio, sono dof e quindi per allenare
     #la rete vanno cambiati ad ogni iterazione
-
-    mu_1_bc_dir = np.random.uniform(low = mu_1_range[0], high = mu_1_range[1], size=(1,1))*np.ones((n_points,1))
-    mu_2_bc_dir = np.random.uniform(low = mu_2_range[0], high = mu_2_range[1], size=(1,1))*np.ones((n_points,1))
-
-    x_bc_3 = np.random.uniform(low=0.0, high=1.0, size=(n_points,1))
-    y_bc_3 = np.ones((n_points,1))
-    u_bc_3 = np.zeros((n_points,1))
-
-    x_bc_4 = np.zeros((n_points,1))
-    y_bc_4 = np.random.uniform(low=0.0, high=1.0, size=(n_points,1))
-    u_bc_4 = np.zeros((n_points,1))
 
 
     for epoch in range(iterations):
@@ -210,58 +195,66 @@ with open(complete_dir+'/loss.csv', 'w', newline='') as csvfile:
         #Genero i valori obiettivo
         u_y_obj = mu_2
         pt_u_y_obj = Variable(torch.from_numpy(u_y_obj).float(), requires_grad = False)
+        #Calcolo il residuo
+        u_y_out = R_bc_1(pt_x_collocation, pt_y_collocation, pt_mu_1, pt_mu_2, net)
+        mse_bc_1 = mse_cost_function(u_y_out, pt_u_y_obj)
 
-
-
-        #Loss condizioni al contorno di Dirichlet
-        pt_mu_1_bc_dir = Variable(torch.from_numpy(mu_1_bc_dir).float(), requires_grad = False)
-        pt_mu_2_bc_dir = Variable(torch.from_numpy(mu_2_bc_dir).float(), requires_grad = False)
-
-        pt_x_bc_3 = Variable(torch.from_numpy(x_bc_3).float(), requires_grad = False)
-        pt_y_bc_3 = Variable(torch.from_numpy(y_bc_3).float(), requires_grad = False)
-        pt_u_bc_3 = Variable(torch.from_numpy(u_bc_3).float(), requires_grad = False)
-        net_bc_out_3 = net(pt_x_bc_3, pt_y_bc_3, pt_mu_1_bc_dir, pt_mu_2_bc_dir)
-        mse_u_bc_3 = mse_cost_function(net_bc_out_3, pt_u_bc_3)
-
-        pt_x_bc_4 = Variable(torch.from_numpy(x_bc_4).float(), requires_grad = False)
-        pt_y_bc_4 = Variable(torch.from_numpy(y_bc_4).float(), requires_grad = False)
-        pt_u_bc_4 = Variable(torch.from_numpy(u_bc_4).float(), requires_grad = False)
-        net_bc_out_4 = net(pt_x_bc_4, pt_y_bc_4, pt_mu_1_bc_dir, pt_mu_2_bc_dir)
-        mse_u_bc_4 = mse_cost_function(net_bc_out_4, pt_u_bc_4)
-        
-
-        #Loss nei dof
-        mu_1 = np.random.uniform(low = mu_1_range[0], high = mu_1_range[1], size=(1,1)) * np.ones((n_points,1))
-        mu_2 = np.random.uniform(low = mu_2_range[0], high = mu_2_range[1], size=(1,1)) *np.ones((n_points,1))
-        #mu_1 = mu_1_bc_dir
-        #mu_2 = mu_2_bc_dir
+        ##LOSS BORDO 2 ({1}x[0,1]), NEUMANN OMOGENEO
+        # Genero i parametri
+        mu_1 = np.random.uniform(low = mu_1_range[0], high = mu_1_range[1], size=(n_points,1))
         pt_mu_1 = Variable(torch.from_numpy(mu_1).float(), requires_grad = False)
+        mu_2 = np.random.uniform(low = mu_2_range[0], high = mu_2_range[1], size=(n_points,1))
         pt_mu_2 = Variable(torch.from_numpy(mu_2).float(), requires_grad = False)
-    
-        y_bc_1 = np.zeros((n_points,1))
-        x_bc_2 = np.ones((n_points,1))
-        u_y_bc_1 = -np.divide(mu_2,mu_1)
-        u_x_bc_2 = np.zeros((n_points,1))
+        #Genero i punti sul bordo
+        x_collocation = np.ones((n_points,1))
+        pt_x_collocation = Variable(torch.from_numpy(x_collocation).float(), requires_grad = True)
+        y_collocation = np.random.uniform(low=0.0, high=1.0, size=(n_points,1))
+        pt_y_collocation = Variable(torch.from_numpy(y_collocation).float(), requires_grad = True)
+        #Genero i valori obiettivo
+        u_x_obj = np.zeros((n_points),1)
+        pt_u_x_obj = Variable(torch.from_numpy(u_x_obj).float(), requires_grad = False)
+        #Calcolo il residuo
+        u_x_out = R_bc_2(pt_x_collocation, pt_y_collocation, pt_mu_1, pt_mu_2, net)
+        mse_bc_2 = mse_cost_function(u_x_out, pt_u_x_obj)
 
-        pt_y_bc_1 = Variable(torch.from_numpy(y_bc_1).float(), requires_grad = True)
-        pt_u_y_bc_1 = Variable(torch.from_numpy(u_y_bc_1).float(), requires_grad = False)
+        ##LOSS BORDO 3 ([0,1]x{1}), DIRICHLET OMOGENEO
+        # Genero i parametri
+        mu_1 = np.random.uniform(low = mu_1_range[0], high = mu_1_range[1], size=(n_points,1))
+        pt_mu_1 = Variable(torch.from_numpy(mu_1).float(), requires_grad = False)
+        mu_2 = np.random.uniform(low = mu_2_range[0], high = mu_2_range[1], size=(n_points,1))
+        pt_mu_2 = Variable(torch.from_numpy(mu_2).float(), requires_grad = False)
+        #Genero i punti sul bordo
+        x_collocation = np.random.uniform(low=0.0, high=1.0, size=(n_points,1))
+        pt_x_collocation = Variable(torch.from_numpy(x_collocation).float(), requires_grad = True)
+        y_collocation = np.ones((n_points,1))
+        pt_y_collocation = Variable(torch.from_numpy(y_collocation).float(), requires_grad = True)
+        #Genero i valori obiettivo
+        u_obj = np.zeros((n_points),1)
+        pt_u_obj = Variable(torch.from_numpy(u_obj).float(), requires_grad = False)
+        #Calcolo il residuo
+        u_out = net(pt_x_collocation, pt_y_collocation, pt_mu_1, pt_mu_2)
+        mse_bc_3 = mse_cost_function(u_out, pt_u_obj)
 
-        pt_x_bc_2 = Variable(torch.from_numpy(x_bc_2).float(), requires_grad = True)    
-        pt_u_x_bc_2 = Variable(torch.from_numpy(u_x_bc_2).float(), requires_grad = False)
+        ##LOSS BORDO 4 ({0}x[0,1]), DIRICHLET OMOGENEO
+        # Genero i parametri
+        mu_1 = np.random.uniform(low = mu_1_range[0], high = mu_1_range[1], size=(n_points,1))
+        pt_mu_1 = Variable(torch.from_numpy(mu_1).float(), requires_grad = False)
+        mu_2 = np.random.uniform(low = mu_2_range[0], high = mu_2_range[1], size=(n_points,1))
+        pt_mu_2 = Variable(torch.from_numpy(mu_2).float(), requires_grad = False)
+        #Genero i punti sul bordo
+        x_collocation = np.zeros((n_points,1))
+        pt_x_collocation = Variable(torch.from_numpy(x_collocation).float(), requires_grad = True)
+        y_collocation = np.random.uniform(low=0.0, high=1.0, size=(n_points,1))
+        pt_y_collocation = Variable(torch.from_numpy(y_collocation).float(), requires_grad = True)
+        #Genero i valori obiettivo
+        u_obj = np.zeros((n_points),1)
+        pt_u_obj = Variable(torch.from_numpy(u_obj).float(), requires_grad = False)
+        #Calcolo il residuo
+        u_out = net(pt_x_collocation, pt_y_collocation, pt_mu_1, pt_mu_2)
+        mse_bc_4 = mse_cost_function(u_out, pt_u_obj)
 
-
-        #Loss condizioni al contorno di Neumann
-
-        f_out_bc_1 = R_bc_1(pt_x_collocation, pt_y_bc_1, pt_mu_1, pt_mu_2, net)
-        mse_f_bc_1 = mse_cost_function(f_out_bc_1, pt_u_y_bc_1)
-
-        f_out_bc_2 = R_bc_2(pt_x_bc_2, pt_y_collocation, pt_mu_1, pt_mu_2, net)
-        mse_f_bc_2 = mse_cost_function(f_out_bc_2, pt_u_x_bc_2)
-
-        f_out = R_pde(pt_x_collocation, pt_y_collocation, pt_mu_1, pt_mu_2, net)
-        mse_f = mse_cost_function(f_out, pt_all_zeros)
-
-        loss = lam*mse_f + (1-lam)*mse_f_bc_1 + (1-lam)*mse_f_bc_2 + (1-lam)*mse_u_bc_3 + (1-lam)*mse_u_bc_4
+        ##CALCOLO LOSS TOTALE
+        loss = lam*mse_pde + (1-lam)*mse_bc_1 + (1-lam)*mse_bc_2 + (1-lam)*mse_bc_3 + (1-lam)*mse_bc_4
         writer.writerow({"epoch":epoch, "loss":loss.item()})
         loss.backward()
         optimizer.step()
