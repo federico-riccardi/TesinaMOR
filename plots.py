@@ -17,8 +17,9 @@ fig = go.Figure(layout = go.Layout(title = "Loss of the PINN model", xaxis = {'t
 
 for iterations in os.listdir("results"):
     for lam in os.listdir("results/"+iterations):
-        df = pd.read_csv("results/"+iterations+"/"+lam+"/loss.csv")
-        fig.add_trace(go.Scatter(x = df['epoch'], y = df['loss'], name=iterations+"/"+lam))
+        for p in os.listdir("results/{}/{}".format(iterations, lam)):
+            df = pd.read_csv("results/{}/{}/{}/loss.csv".format(iterations, lam, p))
+            fig.add_trace(go.Scatter(x = df['epoch'], y = df['loss'], name="{}/{}/{}".format(iterations, lam, p)))
 # assume you have a "long-form" data frame
 # see https://plotly.com/python/px-arguments/ for more options
 #df = pd.read_csv('1000/loss.csv', sep = " ")

@@ -41,23 +41,22 @@ import argparse
 ap = argparse.ArgumentParser()
 
 # Add the arguments to the parser
-n_points = 5000
 ap.add_argument("--lam")
 ap.add_argument("--iterations")
+ap.add_argument("--points")
 args = vars(ap.parse_args())
-#iterations = int(args['iterations'])
-iterations=7000
-#lam = float(args['lam']) #tra 0 e 1
-lam = 0.2
+iterations = int(args['iterations'])
+#iterations=3000
+lam = float(args['lam']) #tra 0 e 1
+n_points = int(args['points'])
 tol = 1e-4
 print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
 print("\n")
 print("Mandando una simulazione con {} iterazioni e parametro lambda che vale {}, valutata in {} punti.".format(iterations, lam, n_points))
 print("\n")
-#iterations = int(input("please insert iteration:"))
 
 #creo la cartella dove salvare i risultati
-dir = "results/{}/{}".format(iterations, lam)
+dir = "results/{}/{}/{}".format(iterations, lam, n_points)
 if not os.path.exists(dir):
     os.makedirs(dir)
 
@@ -271,7 +270,32 @@ with open(complete_dir+'/loss.csv', 'w', newline='') as csvfile:
         mse_bc_4 = mse_cost_function(res_out, res_obj)
 
         ##CALCOLO LOSS TOTALE
-        loss = lam*mse_pde + (1-lam)*mse_bc_1 + (1-lam)*mse_bc_2 + (1-lam)*mse_bc_3 + (1-lam)*mse_bc_4
+        #mse_bc = mse_bc_1+mse_bc_2+mse_bc_3+mse_bc_4
+        if lam == 0.0:
+            max_value = max(mse_pde, mse_bc_1, mse_bc_2, mse_bc_3, mse_bc_4)
+            a = 1.0
+            b = 1.0
+            c = 1.0
+            d = 1.0
+            e = 1.0
+            while max_value/(a*mse_pde) > 10:
+                a *= 10
+                print("a={}".format(a))
+            while max_value/(b*mse_bc_1) > 10000:
+                b *= 10
+                print("b={}".format(b))
+            while max_value/(c*mse_bc_2) > 10000:
+                c *= 10
+                print("c={}".format(c))
+            while max_value/(d*mse_bc_3) > 10000:
+                d *= 10
+                print("d={}".format(d))
+            while max_value/(e*mse_bc_4) > 10000:
+                e *= 10
+                print("e={}".format(e))
+            loss = min(a, 10e3)*mse_pde + min(b, 10e3)*mse_bc_1 + min(c, 10e3)*mse_bc_2 + min(d, 10e3)*mse_bc_3 + min(e, 10e3)*mse_bc_4
+        else:
+            loss = lam*mse_pde + (1-lam)*mse_bc_1 + (1-lam)*mse_bc_2 + (1-lam)*mse_bc_3 + (1-lam)*mse_bc_4
         writer.writerow({"epoch":epoch, "loss":loss.item()})
         loss.backward()
         optimizer.step()
