@@ -48,14 +48,14 @@ args = vars(ap.parse_args())
 iterations = int(args['iterations'])
 lam = float(args['lam']) #tra 0 e 1
 tol = 1e-4
-print("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
 print("\n")
 print("Mandando una simulazione con {} iterazioni e parametro lambda che vale {}, valutata in {} punti.".format(iterations, lam, n_points))
 print("\n")
 #iterations = int(input("please insert iteration:"))
 
 #creo la cartella dove salvare i risultati
-dir = "results/"+str(iterations)+"/"+str(lam)
+dir = "results/{}/{}".format(iterations, lam)
 if not os.path.exists(dir):
     os.makedirs(dir)
 
@@ -287,7 +287,7 @@ with open(complete_dir+'/loss.csv', 'w', newline='') as csvfile:
         writer.writerow({"epoch":epoch, "loss":loss.item()})
         loss.backward()
         optimizer.step()
-
+        epoch += 1
         torch.autograd.no_grad()
 
 
