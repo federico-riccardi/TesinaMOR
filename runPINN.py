@@ -12,6 +12,4 @@ for iter in data['iterations']:
     for l in data['lam']:
         subprocess.run(["./PINN.py", "--lam", str(l), "--iterations", str(iter)])
 
-
-print(data)
-print(data['lam'])
+print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
