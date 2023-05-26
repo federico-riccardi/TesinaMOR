@@ -45,12 +45,12 @@ ap.add_argument("--lam")
 ap.add_argument("--iterations")
 ap.add_argument("--points")
 args = vars(ap.parse_args())
-#iterations = int(args['iterations'])
-iterations=15000
-#lam = float(args['lam']) #tra 0 e 1
-lam = 1.e-2
-#n_points = int(args['points'])
-n_points = 500
+iterations = int(args['iterations'])
+#iterations=15000
+lam = float(args['lam']) #tra 0 e 1
+#lam = 1.e-2
+n_points = int(args['points'])
+#n_points = 500
 tol = 1e-4
 print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
 print("\n")
@@ -141,8 +141,8 @@ with open(complete_dir+'/loss.csv', 'w', newline='') as csvfile:
         return torch.zeros((x.shape[0],1))
     
     def f_bc_3(x,y,mu_1,mu_2):
-        #return torch.zeros((x.shape[0],1))
-        return x
+        return torch.zeros((x.shape[0],1))
+        #return x
     
     def f_bc_4(x,y,mu_1,mu_2):
         return torch.zeros((x.shape[0],1))
@@ -290,19 +290,29 @@ with open(complete_dir+'/loss.csv', 'w', newline='') as csvfile:
             while max_value/(a*mse_pde) > 10:
                 a *= 10
                 print("a={}".format(a))
-            while max_value/(b*mse_bc_1) > 10000:
+            while max_value/(b*mse_bc_1) > 10:
                 b *= 10
                 print("b={}".format(b))
-            while max_value/(c*mse_bc_2) > 10000:
+            while max_value/(c*mse_bc_2) > 10:
                 c *= 10
                 print("c={}".format(c))
-            while max_value/(d*mse_bc_3) > 10000:
+            while max_value/(d*mse_bc_3) > 10:
                 d *= 10
                 print("d={}".format(d))
-            while max_value/(e*mse_bc_4) > 10000:
+            while max_value/(e*mse_bc_4) > 10:
                 e *= 10
                 print("e={}".format(e))
-            loss = min(a, 10e3)*mse_pde + min(b, 10e3)*mse_bc_1 + min(c, 10e3)*mse_bc_2 + min(d, 10e3)*mse_bc_3 + min(e, 10e3)*mse_bc_4
+            a = min(a, 10e3)
+            b = min(b, 10e3)
+            c = min(c, 10e3)
+            d = min(d, 10e5)
+            e = min(e, 10e5)
+            print(a)
+            print(b)
+            print(c)
+            print(d)
+            print(e)
+            loss = a*mse_pde + b*mse_bc_1 + c*mse_bc_2 + d*mse_bc_3 + e*mse_bc_4
         else:
             loss = lam*mse_pde + (1-lam)*mse_bc_1 + (1-lam)*mse_bc_2 + (1-lam)*mse_bc_3 + (1-lam)*mse_bc_4
         writer.writerow({"epoch":epoch, "loss":loss.item()})
