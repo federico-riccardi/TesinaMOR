@@ -45,14 +45,12 @@ ap.add_argument("--lam")
 ap.add_argument("--iterations")
 ap.add_argument("--points")
 args = vars(ap.parse_args())
-#iterations = int(args['iterations'])
-iterations=10000
-#lam = float(args['lam']) #tra 0 e 1
-lam = 1.e-2
-theta_dir = 1.e3
-theta_neu = 1.e1
-#n_points = int(args['points'])
-n_points = 10000
+iterations = int(args['iterations'])
+#iterations=15000
+lam = float(args['lam']) #tra 0 e 1
+#lam = 1.e-2
+n_points = int(args['points'])
+#n_points = 500
 tol = 1e-4
 print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
 print("\n")
@@ -92,8 +90,8 @@ with open(complete_dir+'/loss.csv', 'w', newline='') as csvfile:
 
     np.random.seed(1234)
 
-    mu_1_range = [1.,1.]
-    mu_2_range = [-1., -1.]
+    mu_1_range = [.1,10.]
+    mu_2_range = [-1., 1.]
     P = np.array([mu_1_range,mu_2_range])
     input_dim = 2 + P.shape[0] #x, y and parameters
     output_dim = 1
@@ -144,7 +142,7 @@ with open(complete_dir+'/loss.csv', 'w', newline='') as csvfile:
     
     def f_bc_3(x,y,mu_1,mu_2):
         #return torch.zeros((x.shape[0],1))
-        return x**2
+        return x
     
     def f_bc_4(x,y,mu_1,mu_2):
         return torch.zeros((x.shape[0],1))
@@ -157,7 +155,7 @@ with open(complete_dir+'/loss.csv', 'w', newline='') as csvfile:
         u_xx = torch.autograd.grad(u_x.sum(), x, create_graph=True)[0]
         u_y = torch.autograd.grad(u.sum(), y, create_graph=True)[0]
         u_yy = torch.autograd.grad(u_y.sum(), y, create_graph=True)[0]
-        pde = -mu_1*(u_xx + u_yy) + beta_1(x,y)*u_x + beta_2(x,y)*u_y# - (32.*mu_1*(y*(1-y) + x*(1-x)) + (1-x)*(16.*y**4 - 32.*y**3 + 16.*y**2))
+        pde = -mu_1*(u_xx + u_yy) + beta_1(x,y)*u_x + beta_2(x,y)*u_y
         return pde
 
     def R_dir(x,y,mu_1,mu_2,net):
@@ -292,19 +290,29 @@ with open(complete_dir+'/loss.csv', 'w', newline='') as csvfile:
             while max_value/(a*mse_pde) > 10:
                 a *= 10
                 print("a={}".format(a))
-            while max_value/(b*mse_bc_1) > 10000:
+            while max_value/(b*mse_bc_1) > 10:
                 b *= 10
                 print("b={}".format(b))
-            while max_value/(c*mse_bc_2) > 10000:
+            while max_value/(c*mse_bc_2) > 10:
                 c *= 10
                 print("c={}".format(c))
-            while max_value/(d*mse_bc_3) > 10000:
+            while max_value/(d*mse_bc_3) > 10:
                 d *= 10
                 print("d={}".format(d))
-            while max_value/(e*mse_bc_4) > 10000:
+            while max_value/(e*mse_bc_4) > 10:
                 e *= 10
                 print("e={}".format(e))
-            loss = min(a, 10e3)*mse_pde + min(b, 10e3)*mse_bc_1 + min(c, 10e3)*mse_bc_2 + min(d, 10e3)*mse_bc_3 + min(e, 10e3)*mse_bc_4
+            a = min(a, 10e3)
+            b = min(b, 10e3)
+            c = min(c, 10e3)
+            d = min(d, 10e5)
+            e = min(e, 10e5)
+            print(a)
+            print(b)
+            print(c)
+            print(d)
+            print(e)
+            loss = a*mse_pde + b*mse_bc_1 + c*mse_bc_2 + d*mse_bc_3 + e*mse_bc_4
         else:
             loss = lam*mse_pde + (1-lam)*mse_bc_1 + (1-lam)*mse_bc_2 + (1-lam)*mse_bc_3 + (1-lam)*mse_bc_4
         loss = mse_pde + theta_neu*(mse_bc_1 + mse_bc_2) + theta_dir*(mse_bc_3 + mse_bc_4)
