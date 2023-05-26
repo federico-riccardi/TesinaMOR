@@ -88,8 +88,8 @@ with open(complete_dir+'/loss.csv', 'w', newline='') as csvfile:
 
     np.random.seed(1234)
 
-    mu_1_range = [10.,10.]
-    mu_2_range = [1., 1.]
+    mu_1_range = [.1,10.]
+    mu_2_range = [-1., 1.]
     P = np.array([mu_1_range,mu_2_range])
     input_dim = 2 + P.shape[0] #x, y and parameters
     output_dim = 1
@@ -132,8 +132,8 @@ with open(complete_dir+'/loss.csv', 'w', newline='') as csvfile:
         return torch.zeros((x.shape[0],1))
     
     def f_bc_1(x,y,mu_1,mu_2):
-        #return mu_2
-        return torch.zeros((x.shape[0],1))
+        return mu_2
+        #return torch.zeros((x.shape[0],1))
 
     def f_bc_2(x,y,mu_1,mu_2):
         return torch.zeros((x.shape[0],1))
@@ -152,7 +152,7 @@ with open(complete_dir+'/loss.csv', 'w', newline='') as csvfile:
         u_xx = torch.autograd.grad(u_x.sum(), x, create_graph=True)[0]
         u_y = torch.autograd.grad(u.sum(), y, create_graph=True)[0]
         u_yy = torch.autograd.grad(u_y.sum(), y, create_graph=True)[0]
-        pde = -mu_1*(u_xx + u_yy) + beta_1(x,y)*u_x + beta_2(x,y)*u_y - (32.*mu_1*(y*(1-y) + x*(1-x)) + (1-x)*(16.*y**4 - 32.*y**3 + 16.*y**2))
+        pde = -mu_1*(u_xx + u_yy) + beta_1(x,y)*u_x + beta_2(x,y)*u_y
         return pde
 
     def R_dir(x,y,mu_1,mu_2,net):
@@ -213,8 +213,8 @@ with open(complete_dir+'/loss.csv', 'w', newline='') as csvfile:
         #Genero i valori obiettivo
         res_obj = f_bc_1(x_collocation,y_collocation,pt_mu_1,pt_mu_2)
         #Calcolo il residuo
-        #res_out = R_neu(pt_x_collocation, pt_y_collocation, pt_mu_1, pt_mu_2, net, 0, -1)
-        res_out = R_dir(pt_x_collocation, pt_y_collocation, pt_mu_1, pt_mu_2, net)
+        res_out = R_neu(pt_x_collocation, pt_y_collocation, pt_mu_1, pt_mu_2, net, 0, -1)
+        #res_out = R_dir(pt_x_collocation, pt_y_collocation, pt_mu_1, pt_mu_2, net)
         mse_bc_1 = mse_cost_function(res_out, res_obj)
         print('mse_bc_1:',mse_bc_1)
         print('res_out[1]',res_out[0])
@@ -233,8 +233,8 @@ with open(complete_dir+'/loss.csv', 'w', newline='') as csvfile:
         #Genero i valori obiettivo
         res_obj = f_bc_2(x_collocation,y_collocation,pt_mu_1,pt_mu_2)
         #Calcolo il residuo
-        #res_out = R_neu(pt_x_collocation, pt_y_collocation, pt_mu_1, pt_mu_2, net, 1, 0)
-        res_out = R_dir(pt_x_collocation, pt_y_collocation, pt_mu_1, pt_mu_2, net)
+        res_out = R_neu(pt_x_collocation, pt_y_collocation, pt_mu_1, pt_mu_2, net, 1, 0)
+        #res_out = R_dir(pt_x_collocation, pt_y_collocation, pt_mu_1, pt_mu_2, net)
         mse_bc_2 = mse_cost_function(res_out, res_obj)
 
         ##LOSS BORDO 3 ([0,1]x{1}), DIRICHLET OMOGENEO
