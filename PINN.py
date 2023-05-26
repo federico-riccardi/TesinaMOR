@@ -46,11 +46,13 @@ ap.add_argument("--iterations")
 ap.add_argument("--points")
 args = vars(ap.parse_args())
 #iterations = int(args['iterations'])
-iterations=15000
+iterations=10000
 #lam = float(args['lam']) #tra 0 e 1
 lam = 1.e-2
+theta_dir = 1.e3
+theta_neu = 1.e1
 #n_points = int(args['points'])
-n_points = 500
+n_points = 10000
 tol = 1e-4
 print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
 print("\n")
@@ -142,7 +144,7 @@ with open(complete_dir+'/loss.csv', 'w', newline='') as csvfile:
     
     def f_bc_3(x,y,mu_1,mu_2):
         #return torch.zeros((x.shape[0],1))
-        return x
+        return x**2
     
     def f_bc_4(x,y,mu_1,mu_2):
         return torch.zeros((x.shape[0],1))
@@ -274,7 +276,7 @@ with open(complete_dir+'/loss.csv', 'w', newline='') as csvfile:
         #Genero i valori obiettivo
         res_obj = f_bc_4(pt_x_collocation,pt_y_collocation,pt_mu_1,pt_mu_2)
         #Calcolo il residuo
-        #res_out = R_dir(pt_x_collocation, pt_y_collocation, pt_mu_1, pt_mu_2, net)
+        res_out = R_dir(pt_x_collocation, pt_y_collocation, pt_mu_1, pt_mu_2, net)
         mse_bc_4 = mse_cost_function(res_out, res_obj)
         mse_table[epoch, 4] = mse_bc_4
 
@@ -305,10 +307,11 @@ with open(complete_dir+'/loss.csv', 'w', newline='') as csvfile:
             loss = min(a, 10e3)*mse_pde + min(b, 10e3)*mse_bc_1 + min(c, 10e3)*mse_bc_2 + min(d, 10e3)*mse_bc_3 + min(e, 10e3)*mse_bc_4
         else:
             loss = lam*mse_pde + (1-lam)*mse_bc_1 + (1-lam)*mse_bc_2 + (1-lam)*mse_bc_3 + (1-lam)*mse_bc_4
+        loss = mse_pde + theta_neu*(mse_bc_1 + mse_bc_2) + theta_dir*(mse_bc_3 + mse_bc_4)
         writer.writerow({"epoch":epoch, "loss":loss.item()})
         loss.backward()
         optimizer.step()
-        print(mse_table[epoch,:])
+        print('epoch:',epoch,' mse',mse_table[epoch,:])
         epoch += 1
         torch.autograd.no_grad()
         
