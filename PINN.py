@@ -51,6 +51,9 @@ lam = float(args['lam']) #tra 0 e 1
 #lam = 1.e-2
 n_points = int(args['points'])
 #n_points = 500
+theta_dir = 1.e3
+theta_neu = 1.e1
+bc_dict = dict(zip([1,2,3,4],[1,1,0,0])) #La chiave è il bordo, il valore è il tipo di condizione. 0 sta per Dirichlet, 1 sta per Neumann
 tol = 1e-4
 print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
 print("\n")
@@ -90,8 +93,8 @@ with open(complete_dir+'/loss.csv', 'w', newline='') as csvfile:
 
     np.random.seed(1234)
 
-    mu_1_range = [.1,10.]
-    mu_2_range = [-1., 1.]
+    mu_1_range = [1.,1.]
+    mu_2_range = [-1., -1.]
     P = np.array([mu_1_range,mu_2_range])
     input_dim = 2 + P.shape[0] #x, y and parameters
     output_dim = 1
@@ -142,7 +145,7 @@ with open(complete_dir+'/loss.csv', 'w', newline='') as csvfile:
     
     def f_bc_3(x,y,mu_1,mu_2):
         #return torch.zeros((x.shape[0],1))
-        return x
+        return x**2
     
     def f_bc_4(x,y,mu_1,mu_2):
         return torch.zeros((x.shape[0],1))
@@ -218,8 +221,11 @@ with open(complete_dir+'/loss.csv', 'w', newline='') as csvfile:
         #Genero i valori obiettivo
         res_obj = f_bc_1(x_collocation,y_collocation,pt_mu_1,pt_mu_2)
         #Calcolo il residuo
-        res_out = R_neu(pt_x_collocation, pt_y_collocation, pt_mu_1, pt_mu_2, net, 0, -1)
-        #res_out = R_dir(pt_x_collocation, pt_y_collocation, pt_mu_1, pt_mu_2, net)
+        if bc_dict(1) == 0:
+            res_out = R_dir(pt_x_collocation, pt_y_collocation, pt_mu_1, pt_mu_2, net)
+        else:
+            res_out = R_neu(pt_x_collocation, pt_y_collocation, pt_mu_1, pt_mu_2, net, 0, -1)
+        #Calcolo MSE
         mse_bc_1 = mse_cost_function(res_out, res_obj)
         mse_table[epoch, 1] = mse_bc_1
 
@@ -237,8 +243,11 @@ with open(complete_dir+'/loss.csv', 'w', newline='') as csvfile:
         #Genero i valori obiettivo
         res_obj = f_bc_2(x_collocation,y_collocation,pt_mu_1,pt_mu_2)
         #Calcolo il residuo
-        res_out = R_neu(pt_x_collocation, pt_y_collocation, pt_mu_1, pt_mu_2, net, 1, 0)
-        #res_out = R_dir(pt_x_collocation, pt_y_collocation, pt_mu_1, pt_mu_2, net)
+        if bc_dict(2) == 0:
+            res_out = R_dir(pt_x_collocation, pt_y_collocation, pt_mu_1, pt_mu_2, net)
+        else:
+            res_out = R_neu(pt_x_collocation, pt_y_collocation, pt_mu_1, pt_mu_2, net, 1, 0)
+        #Calcolo MSE
         mse_bc_2 = mse_cost_function(res_out, res_obj)
         mse_table[epoch, 2] = mse_bc_2
 
@@ -256,7 +265,11 @@ with open(complete_dir+'/loss.csv', 'w', newline='') as csvfile:
         #Genero i valori obiettivo
         res_obj = f_bc_3(pt_x_collocation,pt_y_collocation,pt_mu_1,pt_mu_2)
         #Calcolo il residuo
-        res_out = R_dir(pt_x_collocation, pt_y_collocation, pt_mu_1, pt_mu_2, net)
+        if bc_dict(3) == 0:
+            res_out = R_dir(pt_x_collocation, pt_y_collocation, pt_mu_1, pt_mu_2, net)
+        else:
+            res_out = R_neu(pt_x_collocation, pt_y_collocation, pt_mu_1, pt_mu_2, net, 0, 1)
+        #Calcolo MSE
         mse_bc_3 = mse_cost_function(res_out, res_obj)
         mse_table[epoch, 3] = mse_bc_3
 
@@ -274,7 +287,11 @@ with open(complete_dir+'/loss.csv', 'w', newline='') as csvfile:
         #Genero i valori obiettivo
         res_obj = f_bc_4(pt_x_collocation,pt_y_collocation,pt_mu_1,pt_mu_2)
         #Calcolo il residuo
-        res_out = R_dir(pt_x_collocation, pt_y_collocation, pt_mu_1, pt_mu_2, net)
+        if bc_dict(4) == 0:
+            res_out = R_dir(pt_x_collocation, pt_y_collocation, pt_mu_1, pt_mu_2, net)
+        else:
+            res_out = R_neu(pt_x_collocation, pt_y_collocation, pt_mu_1, pt_mu_2, net, -1, 0)
+        #Calcolo MSE
         mse_bc_4 = mse_cost_function(res_out, res_obj)
         mse_table[epoch, 4] = mse_bc_4
 
