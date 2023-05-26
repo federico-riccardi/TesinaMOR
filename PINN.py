@@ -51,9 +51,9 @@ iterations= 10000
 lam = 1.e-2
 #n_points = int(args['points'])
 n_points = 20000
-theta_dir = 1.e3
+theta_dir = 5.e2
 theta_neu = 1.e1
-bc_dict = dict(zip([1,2,3,4],[1,1,0,0])) #La chiave è il bordo, il valore è il tipo di condizione. 0 sta per Dirichlet, 1 sta per Neumann
+bc_dict = dict(zip([1,2,3,4],[0,0,0,0])) #La chiave è il bordo, il valore è il tipo di condizione. 0 sta per Dirichlet, 1 sta per Neumann
 tol = 1e-4
 print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
 print("\n")
@@ -137,11 +137,12 @@ with open(complete_dir+'/loss.csv', 'w', newline='') as csvfile:
         return torch.zeros((x.shape[0],1))
     
     def f_bc_1(x,y,mu_1,mu_2):
-        return mu_2
+        return mu_2*x
         #return torch.zeros((x.shape[0],1))
 
     def f_bc_2(x,y,mu_1,mu_2):
-        return torch.zeros((x.shape[0],1))
+        return mu_2*(1.-y)
+        #return torch.zeros((x.shape[0],1))
     
     def f_bc_3(x,y,mu_1,mu_2):
         #return torch.zeros((x.shape[0],1))
@@ -173,7 +174,7 @@ with open(complete_dir+'/loss.csv', 'w', newline='') as csvfile:
     
     net = Net()
     mse_cost_function = torch.nn.MSELoss() # Mean squared error
-    optimizer = torch.optim.ASGD(net.parameters())
+    optimizer = torch.optim.Adam(net.parameters())
 
     #PRIMO TENTATIVO: facciamo finta che il problema sia in 4 dimensioni e alleniamo la rete esattamente come nel caso 2d, cioè mu_1 e mu_2 
     #si considerano delle variabili esattamente come x e y
@@ -219,7 +220,7 @@ with open(complete_dir+'/loss.csv', 'w', newline='') as csvfile:
         y_collocation = np.zeros((n_points,1))
         pt_y_collocation = Variable(torch.from_numpy(y_collocation).float(), requires_grad = True)
         #Genero i valori obiettivo
-        res_obj = f_bc_1(x_collocation,y_collocation,pt_mu_1,pt_mu_2)
+        res_obj = f_bc_1(pt_x_collocation,pt_y_collocation,pt_mu_1,pt_mu_2)
         #Calcolo il residuo
         if bc_dict[1] == 0:
             res_out = R_dir(pt_x_collocation, pt_y_collocation, pt_mu_1, pt_mu_2, net)
@@ -241,7 +242,7 @@ with open(complete_dir+'/loss.csv', 'w', newline='') as csvfile:
         y_collocation = np.random.uniform(low=0.0, high=1.0, size=(n_points,1))
         pt_y_collocation = Variable(torch.from_numpy(y_collocation).float(), requires_grad = True)
         #Genero i valori obiettivo
-        res_obj = f_bc_2(x_collocation,y_collocation,pt_mu_1,pt_mu_2)
+        res_obj = f_bc_2(pt_x_collocation,pt_y_collocation,pt_mu_1,pt_mu_2)
         #Calcolo il residuo
         if bc_dict[2] == 0:
             res_out = R_dir(pt_x_collocation, pt_y_collocation, pt_mu_1, pt_mu_2, net)
