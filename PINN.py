@@ -20,7 +20,7 @@ import matplotlib.gridspec as gridspec
 import warnings
 import csv
 
-warnings.filterwarnings('ignore')
+#figuwarnings.filterwarnings('ignore')
 
 if not os.path.exists("CppToPython"):
     sys.exit("CppToPython does not exist, please run mesh.sh.") 
@@ -45,10 +45,12 @@ ap.add_argument("--lam")
 ap.add_argument("--iterations")
 ap.add_argument("--points")
 args = vars(ap.parse_args())
-iterations = int(args['iterations'])
-#iterations=3000
-lam = float(args['lam']) #tra 0 e 1
-n_points = int(args['points'])
+#iterations = int(args['iterations'])
+iterations=15000
+#lam = float(args['lam']) #tra 0 e 1
+lam = 1.e-2
+#n_points = int(args['points'])
+n_points = 500
 tol = 1e-4
 print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
 print("\n")
@@ -88,8 +90,8 @@ with open(complete_dir+'/loss.csv', 'w', newline='') as csvfile:
 
     np.random.seed(1234)
 
-    mu_1_range = [10.,10.]
-    mu_2_range = [1., 1.]
+    mu_1_range = [1.,1.]
+    mu_2_range = [-1., -1.]
     P = np.array([mu_1_range,mu_2_range])
     input_dim = 2 + P.shape[0] #x, y and parameters
     output_dim = 1
@@ -132,14 +134,15 @@ with open(complete_dir+'/loss.csv', 'w', newline='') as csvfile:
         return torch.zeros((x.shape[0],1))
     
     def f_bc_1(x,y,mu_1,mu_2):
-        #return mu_2
-        return torch.zeros((x.shape[0],1))
+        return mu_2
+        #return torch.zeros((x.shape[0],1))
 
     def f_bc_2(x,y,mu_1,mu_2):
         return torch.zeros((x.shape[0],1))
     
     def f_bc_3(x,y,mu_1,mu_2):
-        return torch.zeros((x.shape[0],1))
+        #return torch.zeros((x.shape[0],1))
+        return x
     
     def f_bc_4(x,y,mu_1,mu_2):
         return torch.zeros((x.shape[0],1))
@@ -152,7 +155,7 @@ with open(complete_dir+'/loss.csv', 'w', newline='') as csvfile:
         u_xx = torch.autograd.grad(u_x.sum(), x, create_graph=True)[0]
         u_y = torch.autograd.grad(u.sum(), y, create_graph=True)[0]
         u_yy = torch.autograd.grad(u_y.sum(), y, create_graph=True)[0]
-        pde = -mu_1*(u_xx + u_yy) + beta_1(x,y)*u_x + beta_2(x,y)*u_y - (32.*mu_1*(y*(1-y) + x*(1-x)) + (1-x)*(16.*y**4 - 32.*y**3 + 16.*y**2))
+        pde = -mu_1*(u_xx + u_yy) + beta_1(x,y)*u_x + beta_2(x,y)*u_y# - (32.*mu_1*(y*(1-y) + x*(1-x)) + (1-x)*(16.*y**4 - 32.*y**3 + 16.*y**2))
         return pde
 
     def R_dir(x,y,mu_1,mu_2,net):
@@ -177,6 +180,7 @@ with open(complete_dir+'/loss.csv', 'w', newline='') as csvfile:
     #I nodi di Dirichlet non vanno ricreati perché non sono dof, i Neumann invece, come i punti nel dominio, sono dof e quindi per allenare
     #la rete vanno cambiati ad ogni iterazione
     loss = 5
+    mse_table = np.zeros([iterations,5])
     epoch = 0
     while epoch < iterations and loss > tol:
 
@@ -198,6 +202,7 @@ with open(complete_dir+'/loss.csv', 'w', newline='') as csvfile:
         #Calcolo il residuo
         res_out = R_pde(pt_x_collocation, pt_y_collocation, pt_mu_1, pt_mu_2, net)
         mse_pde = mse_cost_function(res_out, res_obj)
+        mse_table[epoch, 0] = mse_pde
         
         ##LOSS BORDO 1 ([0,1]x{0}), NEUMANN NON OMOGENEO
         # Genero i parametri
@@ -213,9 +218,10 @@ with open(complete_dir+'/loss.csv', 'w', newline='') as csvfile:
         #Genero i valori obiettivo
         res_obj = f_bc_1(x_collocation,y_collocation,pt_mu_1,pt_mu_2)
         #Calcolo il residuo
-        #res_out = R_neu(pt_x_collocation, pt_y_collocation, pt_mu_1, pt_mu_2, net, 0, -1)
-        res_out = R_dir(pt_x_collocation, pt_y_collocation, pt_mu_1, pt_mu_2, net)
+        res_out = R_neu(pt_x_collocation, pt_y_collocation, pt_mu_1, pt_mu_2, net, 0, -1)
+        #res_out = R_dir(pt_x_collocation, pt_y_collocation, pt_mu_1, pt_mu_2, net)
         mse_bc_1 = mse_cost_function(res_out, res_obj)
+        mse_table[epoch, 1] = mse_bc_1
 
         ##LOSS BORDO 2 ({1}x[0,1]), NEUMANN OMOGENEO
         # Genero i parametri
@@ -231,9 +237,10 @@ with open(complete_dir+'/loss.csv', 'w', newline='') as csvfile:
         #Genero i valori obiettivo
         res_obj = f_bc_2(x_collocation,y_collocation,pt_mu_1,pt_mu_2)
         #Calcolo il residuo
-        #res_out = R_neu(pt_x_collocation, pt_y_collocation, pt_mu_1, pt_mu_2, net, 1, 0)
-        res_out = R_dir(pt_x_collocation, pt_y_collocation, pt_mu_1, pt_mu_2, net)
+        res_out = R_neu(pt_x_collocation, pt_y_collocation, pt_mu_1, pt_mu_2, net, 1, 0)
+        #res_out = R_dir(pt_x_collocation, pt_y_collocation, pt_mu_1, pt_mu_2, net)
         mse_bc_2 = mse_cost_function(res_out, res_obj)
+        mse_table[epoch, 2] = mse_bc_2
 
         ##LOSS BORDO 3 ([0,1]x{1}), DIRICHLET OMOGENEO
         # Genero i parametri
@@ -247,10 +254,11 @@ with open(complete_dir+'/loss.csv', 'w', newline='') as csvfile:
         y_collocation = np.ones((n_points,1))
         pt_y_collocation = Variable(torch.from_numpy(y_collocation).float(), requires_grad = True)
         #Genero i valori obiettivo
-        res_obj = f_bc_3(x_collocation,y_collocation,pt_mu_1,pt_mu_2)
+        res_obj = f_bc_3(pt_x_collocation,pt_y_collocation,pt_mu_1,pt_mu_2)
         #Calcolo il residuo
         res_out = R_dir(pt_x_collocation, pt_y_collocation, pt_mu_1, pt_mu_2, net)
         mse_bc_3 = mse_cost_function(res_out, res_obj)
+        mse_table[epoch, 3] = mse_bc_3
 
         ##LOSS BORDO 4 ({0}x[0,1]), DIRICHLET OMOGENEO
         # Genero i parametri
@@ -264,10 +272,11 @@ with open(complete_dir+'/loss.csv', 'w', newline='') as csvfile:
         y_collocation = np.random.uniform(low=0.0, high=1.0, size=(n_points,1))
         pt_y_collocation = Variable(torch.from_numpy(y_collocation).float(), requires_grad = True)
         #Genero i valori obiettivo
-        res_obj = f_bc_4(x_collocation,y_collocation,pt_mu_1,pt_mu_2)
+        res_obj = f_bc_4(pt_x_collocation,pt_y_collocation,pt_mu_1,pt_mu_2)
         #Calcolo il residuo
-        res_out = R_dir(pt_x_collocation, pt_y_collocation, pt_mu_1, pt_mu_2, net)
+        #res_out = R_dir(pt_x_collocation, pt_y_collocation, pt_mu_1, pt_mu_2, net)
         mse_bc_4 = mse_cost_function(res_out, res_obj)
+        mse_table[epoch, 4] = mse_bc_4
 
         ##CALCOLO LOSS TOTALE
         #mse_bc = mse_bc_1+mse_bc_2+mse_bc_3+mse_bc_4
@@ -299,12 +308,14 @@ with open(complete_dir+'/loss.csv', 'w', newline='') as csvfile:
         writer.writerow({"epoch":epoch, "loss":loss.item()})
         loss.backward()
         optimizer.step()
+        print(mse_table[epoch,:])
         epoch += 1
         torch.autograd.no_grad()
+        
 
 
-fig = plt.figure()
-ax = fig.add_subplot(projection='3d')
+np.savetxt('mse_table.csv',mse_table,delimiter=',')
+fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
 x = np.arange(0,1,0.02)
 y = np.arange(0,1,0.02)
 ms_x, ms_y = np.meshgrid(x,y)
@@ -312,8 +323,9 @@ x = np.ravel(ms_x).reshape(-1,1)
 y = np.ravel(ms_y).reshape(-1,1)
 pt_x = Variable(torch.from_numpy(x).float(), requires_grad=True)
 pt_y = Variable(torch.from_numpy(y).float(), requires_grad=True)
-pt_u = net(pt_x, pt_y, 10*torch.ones((pt_x.shape[0],1)), 1*torch.ones((pt_y.shape[0],1)))
-u = pt_u.data.cpu().numpy()
+pt_u = net(pt_x, pt_y, 1.*torch.ones((pt_x.shape[0],1)), -1.*torch.ones((pt_y.shape[0],1)))
+#u = pt_u.data.cpu().numpy()
+u = pt_u.numpy(force=True)
 ms_u = u.reshape(ms_x.shape)
 surf = ax.plot_surface(ms_x, ms_y, ms_u, cmap=cm.coolwarm, linewidth=0, antialiased=False)
 fig.savefig(complete_dir+'/foto.png')
