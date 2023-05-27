@@ -45,12 +45,12 @@ ap.add_argument("--lam")
 ap.add_argument("--iterations")
 ap.add_argument("--points")
 args = vars(ap.parse_args())
-#iterations = int(args['iterations'])
-iterations= 10000
-#lam = float(args['lam']) #tra 0 e 1
-lam = 1.e-2
-#n_points = int(args['points'])
-n_points = 20000
+iterations = int(args['iterations'])
+#iterations= 10000
+lam = float(args['lam']) #tra 0 e 1
+#lam = 1.e-2
+n_points = int(args['points'])
+#n_points = 20000
 theta_dir = 5.e2
 theta_neu = 1.e1
 bc_dict = dict(zip([1,2,3,4],[0,0,0,0])) #La chiave è il bordo, il valore è il tipo di condizione. 0 sta per Dirichlet, 1 sta per Neumann
@@ -333,7 +333,7 @@ with open(complete_dir+'/loss.csv', 'w', newline='') as csvfile:
             loss = a*mse_pde + b*mse_bc_1 + c*mse_bc_2 + d*mse_bc_3 + e*mse_bc_4
         else:
             loss = lam*mse_pde + (1-lam)*mse_bc_1 + (1-lam)*mse_bc_2 + (1-lam)*mse_bc_3 + (1-lam)*mse_bc_4
-        loss = mse_pde + theta_neu*(mse_bc_1 + mse_bc_2) + theta_dir*(mse_bc_3 + mse_bc_4)
+        #loss = mse_pde + theta_neu*(mse_bc_1 + mse_bc_2) + theta_dir*(mse_bc_3 + mse_bc_4)
         writer.writerow({"epoch":epoch, "loss":loss.item()})
         loss.backward()
         optimizer.step()
