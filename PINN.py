@@ -41,27 +41,27 @@ import argparse
 ap = argparse.ArgumentParser()
 
 # Add the arguments to the parser
-ap.add_argument("--lam")
+ap.add_argument("--coeff1")
+ap.add_argument("--coeff2")
+ap.add_argument("--coeff3")
+ap.add_argument("--coeff4")
 ap.add_argument("--iterations")
 ap.add_argument("--points")
 args = vars(ap.parse_args())
-#iterations = int(args['iterations'])
-iterations= 10000
-#lam = float(args['lam']) #tra 0 e 1
-lam = 1.e-2
-#n_points = int(args['points'])
-n_points = 20000
-theta_dir = 5.e2
-theta_neu = 1.e1
-bc_dict = dict(zip([1,2,3,4],[0,0,0,0])) #La chiave è il bordo, il valore è il tipo di condizione. 0 sta per Dirichlet, 1 sta per Neumann
+iterations = int(args['iterations'])
+#iterations= 20000
+coeff = [float(args['coeff1']), float(args['coeff2']), float(args['coeff3']), float(args['coeff4'])]
+n_points = int(args['points'])
+#n_points = 20000
+bc_dict = dict(zip([1,2,3,4],[1,1,0,0])) #La chiave è il bordo, il valore è il tipo di condizione. 0 sta per Dirichlet, 1 sta per Neumann
 tol = 1e-4
 print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
 print("\n")
-print("Mandando una simulazione con {} iterazioni e parametro lambda che vale {}, valutata in {} punti.".format(iterations, lam, n_points))
+print("Mandando una simulazione con {} iterazioni e parametro lambda che vale {}, valutata in {} punti.".format(iterations, coeff, n_points))
 print("\n")
 
 #creo la cartella dove salvare i risultati
-dir = "results/{}/{}/{}".format(iterations, lam, n_points)
+dir = "results/{}/{}/{}".format(iterations, coeff, n_points)
 if not os.path.exists(dir):
     os.makedirs(dir)
 
@@ -93,8 +93,8 @@ with open(complete_dir+'/loss.csv', 'w', newline='') as csvfile:
 
     np.random.seed(1234)
 
-    mu_1_range = [1.,1.]
-    mu_2_range = [-1., -1.]
+    mu_1_range = [.1,10.]
+    mu_2_range = [-1., 1.]
     P = np.array([mu_1_range,mu_2_range])
     input_dim = 2 + P.shape[0] #x, y and parameters
     output_dim = 1
@@ -134,22 +134,22 @@ with open(complete_dir+'/loss.csv', 'w', newline='') as csvfile:
     def f_pde(x,y,mu_1,mu_2):
         #f = 32.*mu_1*(y*(1-y) + x*(1-x)) + (1-x)*(16.*y**4 - 32.*y**3 + 16.*y**2)
         #return f
-        return torch.zeros((x.shape[0],1))
+        return torch.zeros((x.shape[0],1)) #problema esatto
     
     def f_bc_1(x,y,mu_1,mu_2):
-        return mu_2*x
-        #return torch.zeros((x.shape[0],1))
+        return mu_2 #problema esatto
+        #return torch.zeros((x.shape[0],1)) 
 
     def f_bc_2(x,y,mu_1,mu_2):
-        return mu_2*(1.-y)
-        #return torch.zeros((x.shape[0],1))
+        #return mu_2*(1.-y)
+        return torch.zeros((x.shape[0],1)) #problema esatto
     
     def f_bc_3(x,y,mu_1,mu_2):
-        #return torch.zeros((x.shape[0],1))
-        return x**2
+        return torch.zeros((x.shape[0],1)) #problema esatto
+        #return x**2
     
     def f_bc_4(x,y,mu_1,mu_2):
-        return torch.zeros((x.shape[0],1))
+        return torch.zeros((x.shape[0],1)) #problema esatto
 
         
     def R_pde(x, y, mu_1, mu_2, net): 
@@ -298,7 +298,7 @@ with open(complete_dir+'/loss.csv', 'w', newline='') as csvfile:
 
         ##CALCOLO LOSS TOTALE
         #mse_bc = mse_bc_1+mse_bc_2+mse_bc_3+mse_bc_4
-        if lam == 0.0:
+        if coeff == 0.0:
             max_value = max(mse_pde, mse_bc_1, mse_bc_2, mse_bc_3, mse_bc_4)
             a = 1.0
             b = 1.0
@@ -331,9 +331,9 @@ with open(complete_dir+'/loss.csv', 'w', newline='') as csvfile:
             print(d)
             print(e)
             loss = a*mse_pde + b*mse_bc_1 + c*mse_bc_2 + d*mse_bc_3 + e*mse_bc_4
-        else:
-            loss = lam*mse_pde + (1-lam)*mse_bc_1 + (1-lam)*mse_bc_2 + (1-lam)*mse_bc_3 + (1-lam)*mse_bc_4
-        loss = mse_pde + theta_neu*(mse_bc_1 + mse_bc_2) + theta_dir*(mse_bc_3 + mse_bc_4)
+        #else:
+            #loss = lam*mse_pde + (1-lam)*mse_bc_1 + (1-lam)*mse_bc_2 + (1-lam)*mse_bc_3 + (1-lam)*mse_bc_4
+        loss = mse_pde + coeff[0]*mse_bc_1 + coeff[1]*mse_bc_2 + coeff[2]*mse_bc_3 + coeff[3]*mse_bc_4
         writer.writerow({"epoch":epoch, "loss":loss.item()})
         loss.backward()
         optimizer.step()
@@ -352,7 +352,7 @@ x = np.ravel(ms_x).reshape(-1,1)
 y = np.ravel(ms_y).reshape(-1,1)
 pt_x = Variable(torch.from_numpy(x).float(), requires_grad=True)
 pt_y = Variable(torch.from_numpy(y).float(), requires_grad=True)
-pt_u = net(pt_x, pt_y, 1.*torch.ones((pt_x.shape[0],1)), -1.*torch.ones((pt_y.shape[0],1)))
+pt_u = net(pt_x, pt_y, .1*torch.ones((pt_x.shape[0],1)), -1.*torch.ones((pt_y.shape[0],1)))
 #u = pt_u.data.cpu().numpy()
 u = pt_u.numpy(force=True)
 ms_u = u.reshape(ms_x.shape)

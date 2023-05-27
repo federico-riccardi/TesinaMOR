@@ -9,8 +9,8 @@ with open('Configurazioni.yaml') as f:
     data = yaml.load(f, Loader=SafeLoader)
 
 for iter in data['iterations']:
-    for l in data['lam']:
+    for l in data['coeff']:
         for p in data['points']:
-            subprocess.run(["./PINN.py", "--lam", str(l), "--iterations", str(iter), "--points", str(p)])
+            subprocess.run(["./PINN.py", "--coeff1", str(l[1]), "--coeff2", str(l[2]), "--coeff3", str(l[3]), "--coeff4", str(l[4]), "--iterations", str(iter), "--points", str(p)])
 
 print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
