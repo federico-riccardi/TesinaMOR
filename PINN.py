@@ -49,11 +49,13 @@ ap.add_argument("--iterations")
 ap.add_argument("--points")
 args = vars(ap.parse_args())
 iterations = int(args['iterations'])
-#iterations= 20000
+#iterations= 10000
 coeff = [float(args['coeff1']), float(args['coeff2']), float(args['coeff3']), float(args['coeff4'])]
+#coeff = [10, 10, 500, 500]
 n_points = int(args['points'])
-#n_points = 20000
+#n_points = 200
 bc_dict = dict(zip([1,2,3,4],[1,1,0,0])) #La chiave è il bordo, il valore è il tipo di condizione. 0 sta per Dirichlet, 1 sta per Neumann
+delta = 0.1 #parametro per funzione cutoff
 tol = 1e-4
 print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
 print("\n")
@@ -131,13 +133,16 @@ with open(complete_dir+'/loss.csv', 'w', newline='') as csvfile:
     def beta_2(x,y):
         return torch.zeros((x.shape[0],1))
     
+    def cutoff(x):
+            return (x**2/delta**2 * (-2.*x/delta + 3.))*(x <= delta) + 1. * (x> delta)
+    
     def f_pde(x,y,mu_1,mu_2):
         #f = 32.*mu_1*(y*(1-y) + x*(1-x)) + (1-x)*(16.*y**4 - 32.*y**3 + 16.*y**2)
         #return f
         return torch.zeros((x.shape[0],1)) #problema esatto
     
     def f_bc_1(x,y,mu_1,mu_2):
-        return mu_2 #problema esatto
+        return mu_2*cutoff(x) #problema esatto
         #return torch.zeros((x.shape[0],1)) 
 
     def f_bc_2(x,y,mu_1,mu_2):
@@ -337,7 +342,9 @@ with open(complete_dir+'/loss.csv', 'w', newline='') as csvfile:
         writer.writerow({"epoch":epoch, "loss":loss.item()})
         loss.backward()
         optimizer.step()
-        print('epoch:',epoch,' mse',mse_table[epoch,:])
+        #print('epoch:',epoch,' mse',mse_table[epoch,:])
+        if epoch % (iterations//10) == 0: #stampa la barra di caricamento
+            print('|', '☻'*(epoch//(iterations//10) + 1), ' '*(10 - (epoch//(iterations//10) + 1)), '|')
         epoch += 1
         torch.autograd.no_grad()
         

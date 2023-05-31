@@ -23,6 +23,12 @@ Il valore `plotMesh` booleano regola se deve stampare la mesh o no. La mesh vien
 
 Parametro che pesa i contributi nella loss.
 
+### Funzione cut-off dato di Neumann non omogeneo
+
+La funzione cut-off s(x) è costruita a partire dal polinomio p(x) che soddisfa le seguenti condizioni:
+p(0) = 0, p'(0) = 0, p(1) = 1, p'(1) = 0.
+Risolvendo si ottiene p(x) = x^2(-2x + 3). s è poi ottenuta dilatando p, ovvero s(x) = p(x/delta), dove delta è il punto in cui s diventa 1.
+
 ## plots.py
 
 File Dash che serve per creare i grafici interattivi. Prende i risultati dalla cartella `results` (che non viene pushata perché è nel file `.gitignore`), creata dal file `PINN.py`.
