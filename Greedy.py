@@ -101,24 +101,6 @@ invX = splu(X)
 def normX(v, X):
 	return np.sqrt(np.transpose(v) @ X @ v)
 
-def ProjectSystem(AQH, fQH, B):
-    AQN = []
-    fQN = []
-    for AH in AQH:
-        AQN.append(np.copy(np.transpose(B) @ AH @ B))
-    for fH in fQH:
-        fQN.append(np.copy(np.transpose(B) @ fH))
-    return [AQN, fQN]
-
-def Solve_reduced_order(AQN, fQN, thetaA_mu, thetaF_mu):
-    A = thetaA_mu[0] * AQN[0]
-    f = thetaF_mu[0] * fQN[0]
-    for i in range(1, len(AQN)):
-        A += thetaA_mu[i] * AQN[i]
-    for i in range(1, len(fQN)):
-        f += thetaF_mu[i] * fQN[i]
-    return np.linalg.solve(A, f)
-
 def GramSchmidt(V, u):
     z = u
     if np.size(V) > 0:
