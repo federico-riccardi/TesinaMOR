@@ -59,6 +59,10 @@ def Poisson_b(numPoints, points):
 	values[0,:] = matPoints[1,:]*(1.-matPoints[1,:])
 	return values.ctypes.data
 
+def Poisson_c(numPoints, points):
+	values = np.ones(numPoints)
+	return values.ctypes.data
+
 def Poisson_weakTerm_down(numPoints, points):
 	values = np.ones(numPoints)
 	return values.ctypes.data
@@ -66,6 +70,8 @@ def Poisson_weakTerm_down(numPoints, points):
 [stiffness, stiffnessStrong] = gedim.AssembleStiffnessMatrix(Poisson_a, problemData, lib)
 
 [advection, advectionStrong] = gedim.AssembleAdvectionMatrix(Poisson_b, problemData, lib)
+
+[mass, massStrong] = gedim.AssembleMassMatrix(Poisson_c, problemData, lib) # serve solo per calcolare la costante di Poincaré   q
 
 weakTerm_down = gedim.AssembleWeakTerm(Poisson_weakTerm_down, 2, problemData, lib)
 
@@ -83,6 +89,7 @@ training_set = np.random.uniform(low=P[:, 0], high=P[:, 1], size=(M, P.shape[0])
 N_max = 20
 tol  = 1.e-2
 X = stiffness
+invX = splu(X)
 
 def normX(v, X):
 	return np.sqrt(np.transpose(v) @ X @ v)
@@ -105,19 +112,39 @@ def Solve_reduced_order(AQN, fQN, thetaA_mu, thetaF_mu):
         f += thetaF_mu[i] * fQN[i]
     return np.linalg.solve(A, f)
 
-def GramSchmidt(V, u, X):
+def GramSchmidt(V, u):
     z = u
     if np.size(V) > 0:
         z = u - V @ (np.transpose(V) @ (X @ u))
     return z / normX(z, X)
 
-def ErrorEstimate():
-     return
+def OfflineResidual(B):
+     C_11 = weakTerm_down.T @ (invX.solve(weakTerm_down)) # Xu = f_1 -> u = X^{-1} f_1 = invX.solve(f_1)
 
+     d_11 = B.T @ stiffness.T @ (invX.solve(weakTerm_down))
+     d_12 = B.T @ advection.T @ (invX.solve(weakTerm_down))
+
+     E_11 = B.T @ stiffness.T @ (invX.solve(stiffness @ B))
+     E_12 = B.T @ stiffness.T @ (invX.solve(advection @ B))
+     E_22 = B.T @ advection.T @ (invX.solve(advection @ B))
+     return [C_11, d_11, d_12, E_11, E_12, E_22]
+     
+
+def ErrorEstimate(mu, solN_mu, off_res):
+    pre_mult = [mu[1]**2, -2*mu[0]*mu[1]*solN_mu.T, -2*mu[1]*solN_mu.T, mu[0]**2*solN_mu.T, 2*mu[0]*solN_mu.T, solN_mu.T]
+    post_mult = [1., 1., 1., solN_mu, solN_mu, solN_mu]
+    error = 0.0
+    for i in range(len(off_res)):
+        error += pre_mult[i] @ off_res[i] @ post_mult[i]
+    return error
+
+eigs, vecs = scipy.linalg.eig(stiffness.todense(), mass.todense())
+min_eig = np.min(eigs.real)
+C_omega =  1 / np.sqrt(min_eig) #costante di Poincaré
 def InfSupConstant(mu):
-     return
+    return mu[0]/(1+C_omega**2)
 
-def greedy(X,N_max, tol):
+def greedy(N_max, tol):
     N = 0
     basis_functions = []
     B = np.empty((0,0))
@@ -125,7 +152,7 @@ def greedy(X,N_max, tol):
     training_set_list = training_set.tolist()
     initial_muN = np.random.choice(len(training_set_list) - 1, 1)[0]
     mu_N = training_set_list.pop(initial_muN)
-    invX = splu(X)
+    beta_mu = InfSupConstant()
 
     print('Perfom greedy algorithm...')
     while len(training_set_list) > 0 and N < N_max and delta_N > tol:
@@ -136,16 +163,16 @@ def greedy(X,N_max, tol):
         B = np.transpose(np.array(basis_functions))
         BX = np.transpose(B) @ X @ B
 
+        stiffness_RB = 
         [AQN, fQN] = ProjectSystem(X, weakTerm_down, B) # applica il cambio base
-        [C_11, d_11, d_12, E_11, E_12, E_22] = OfflineResidual(B, invX)
-
+        off_res = OfflineResidual(B)
         counter = 0
         mu_selected_index = -1
         max_deltaN = -1.
         for mu in training_set_list:
+            solN_mu = 
             solN_mu = Solve_reduced_order(AQN, fQN, thetaA(mu), thetaF(mu))
-            betaN_mu = InfSupConstant(mu)
-            deltaN_mu = ErrorEstimate(Cq1q2, dq1q2, Eq1q2, thetaA(mu), thetaF(mu), solN_mu, betaN_mu) / normX(solN_mu, BX)
+            deltaN_mu = ErrorEstimate(mu, solN_mu, off_res) / normX(solN_mu, BX)
 	    
             if deltaN_mu > max_deltaN:
                 max_deltaN = deltaN_mu
