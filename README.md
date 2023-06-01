@@ -36,7 +36,3 @@ File Dash che serve per creare i grafici interattivi. Prende i risultati dalla c
 La cartella `results` ha la seguente struttura `results` -> `iterations` -> `lambda` -> `foto.jpg` e `loss.csv`.
 
 Il file va mandato quando esiste la cartella `results`, compare la scritta `Dash is running on http://127.0.0.1:8050/`, copiare il link sul browser e lì appare il grafico.
-
-TO DO:
- - c Neumann 2
- - pesare loss

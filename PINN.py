@@ -302,42 +302,6 @@ with open(complete_dir+'/loss.csv', 'w', newline='') as csvfile:
         mse_table[epoch, 4] = mse_bc_4
 
         ##CALCOLO LOSS TOTALE
-        #mse_bc = mse_bc_1+mse_bc_2+mse_bc_3+mse_bc_4
-        if coeff == 0.0:
-            max_value = max(mse_pde, mse_bc_1, mse_bc_2, mse_bc_3, mse_bc_4)
-            a = 1.0
-            b = 1.0
-            c = 1.0
-            d = 1.0
-            e = 1.0
-            while max_value/(a*mse_pde) > 10:
-                a *= 10
-                print("a={}".format(a))
-            while max_value/(b*mse_bc_1) > 10:
-                b *= 10
-                print("b={}".format(b))
-            while max_value/(c*mse_bc_2) > 10:
-                c *= 10
-                print("c={}".format(c))
-            while max_value/(d*mse_bc_3) > 10:
-                d *= 10
-                print("d={}".format(d))
-            while max_value/(e*mse_bc_4) > 10:
-                e *= 10
-                print("e={}".format(e))
-            a = min(a, 10e3)
-            b = min(b, 10e3)
-            c = min(c, 10e3)
-            d = min(d, 10e5)
-            e = min(e, 10e5)
-            print(a)
-            print(b)
-            print(c)
-            print(d)
-            print(e)
-            loss = a*mse_pde + b*mse_bc_1 + c*mse_bc_2 + d*mse_bc_3 + e*mse_bc_4
-        #else:
-            #loss = lam*mse_pde + (1-lam)*mse_bc_1 + (1-lam)*mse_bc_2 + (1-lam)*mse_bc_3 + (1-lam)*mse_bc_4
         loss = mse_pde + coeff[0]*mse_bc_1 + coeff[1]*mse_bc_2 + coeff[2]*mse_bc_3 + coeff[3]*mse_bc_4
         writer.writerow({"epoch":epoch, "loss":loss.item()})
         loss.backward()
