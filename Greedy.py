@@ -31,10 +31,140 @@ sys.path.append("CppToPython")
 sys.path.insert(0, '../Utilities/')
 
 import GeDiM4Py as gedim
-
+os.chdir("CppToPython")
 lib = gedim.ImportLibrary("./release/GeDiM4Py.so")
 
 config = { 'GeometricTolerance': 1.0e-8 }
 gedim.Initialize(config, lib)
 
+order = 1
+meshSize = 0.001
+
+domain = { 'SquareEdge': 1.0, 'VerticesBoundaryCondition': [1,0,1,1], 'EdgesBoundaryCondition': [2,3,1,1], 'DiscretizationType': 1, 'MeshCellsMaximumArea': meshSize }
+[meshInfo, mesh] = gedim.CreateDomainSquare(domain, lib)
+
+discreteSpace = { 'Order': order, 'Type': 1, 'BoundaryConditionsType': [1, 2, 3, 3] }
+[problemData, dofs, strongs] = gedim.Discretize(discreteSpace, lib)
+
+gedim.PlotMesh(mesh)
+gedim.PlotDofs(mesh, dofs, strongs)
+
+def Poisson_A():
+	return 1.
+def Poisson_B():
+	return 1.
+
+def Poisson_a(numPoints, points):
+	values = np.ones(numPoints) * Poisson_A()
+	return values.ctypes.data
+
+def Poisson_b(numPoints, points):
+	values = np.zeros((2, numPoints))
+	matPoints = gedim.make_nd_matrix(points, (3, numPoints), np.double)
+	values[0,:] = matPoints[1,:]*(1.-matPoints[1,:])
+	return values.ctypes.data
+
+def Poisson_f(numPoints, points):
+	values = np.zeros(numPoints)
+	return values.ctypes.data
+
+def Poisson_weakTerm_down(numPoints, points):
+	values = np.ones(numPoints)
+	return values.ctypes.data
+
+[stiffness, stiffnessStrong] = gedim.AssembleStiffnessMatrix(Poisson_a, problemData, lib)
+
+[advection, advectionStrong] = gedim.AssembleAdvectionMatrix(Poisson_b, problemData, lib)
+
+forcingTerm = gedim.AssembleForcingTerm(Poisson_f, problemData, lib)
+
+weakTerm_down = gedim.AssembleWeakTerm(Poisson_weakTerm_down, 2, problemData, lib)
+
+solution = gedim.LUSolver(stiffness+advection, weakTerm_down, lib)
+gedim.PlotSolution(mesh, dofs, strongs, solution, np.zeros(problemData['NumberStrongs']))
+
+
+### define the training set
+M = 100
+mu1_range = [0.1, 10.]
+mu2_range = [-1., 1.]
+P = np.array([mu1_range, mu2_range])
+
+training_set = np.random.uniform(low=P[:, 0], high=P[:, 1], size=(M, P.shape[0]))
+N_max = 20
+tol  = 1.e-2
+X = stiffness
+
+def normX(v, X):
+	return np.sqrt(np.transpose(v) @ X @ v)
+
+def ProjectSystem(AQH, fQH, B):
+    AQN = []
+    fQN = []
+    for AH in AQH:
+        AQN.append(np.copy(np.transpose(B) @ AH @ B))
+    for fH in fQH:
+        fQN.append(np.copy(np.transpose(B) @ fH))
+    return [AQN, fQN]
+
+def Solve_reduced_order(AQN, fQN, thetaA_mu, thetaF_mu):
+    A = thetaA_mu[0] * AQN[0]
+    f = thetaF_mu[0] * fQN[0]
+    for i in range(1, len(AQN)):
+        A += thetaA_mu[i] * AQN[i]
+    for i in range(1, len(fQN)):
+        f += thetaF_mu[i] * fQN[i]
+    return np.linalg.solve(A, f)
+
+def GramSchmidt(V, u, X):
+    z = u
+    if np.size(V) > 0:
+        z = u - V @ (np.transpose(V) @ (X @ u))
+    return z / normX(z, X)
+
+
+def greedy(X,N_max, tol):
+    N = 0
+    basis_functions = []
+    B = np.empty((0,0))
+    deltaN = tol + 1.
+    training_set_list = training_set.tolist()
+    initial_muN = np.random.choice(len(training_set_list) - 1, 1)[0]
+    muN = training_set_list.pop(initial_muN)
+    invX = splu(X)
+
+    print('Perfom greedy algorithm...')
+    while len(training_set_list) > 0 and N < N_max and deltaN > tol:
+        N = N + 1
+        print('\t', N,'/', N_max, '-', '{:.16e}'.format(np.mean(deltaN)), '/', '{:.16e}'.format(np.mean(tol)))
+        snapshot = gedim.LUsolver(mu_N[0]*X+advection,mu_N[1]*weakTerm_down,lib)
+        basis_function = GramSchmidt(B, snapshot, X)
+        basis_functions.append(np.copy(basis_function))
+        B = np.transpose(np.array(basis_functions))
+        BX = np.transpose(B) @ X @ B
+
+        [AQN, fQN] = ProjectSystem(X, weakTerm_down, B)
+        [Cq1q2, dq1q2, Eq1q2] = OfflineResidual(AQH, fQH, B, invX)
+
+        counter = 0
+        mu_selected_index = -1
+        max_deltaN = -1.
+        for mu in training_set_list:
+            solN_mu = Solve_reduced_order(AQN, fQN, thetaA(mu), thetaF(mu))
+            betaN_mu = InfSupConstant(mu)
+            deltaN_mu = ErrorEstimate(Cq1q2, dq1q2, Eq1q2, thetaA(mu), thetaF(mu), solN_mu, betaN_mu) / normX(solN_mu, BX)
+	    
+            if deltaN_mu > max_deltaN:
+                max_deltaN = deltaN_mu
+                mu_selected_index = counter
+
+            counter = counter + 1
+
+        if mu_selected_index == -1:
+            raise Exception('ERROR, parameter not found')
+
+        muN = training_set_list.pop(mu_selected_index)
+        deltaN = max_deltaN
+
+    return [N, np.transpose(np.array(basis_functions))]
 
