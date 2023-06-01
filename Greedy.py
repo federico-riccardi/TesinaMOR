@@ -3,6 +3,7 @@
 
 #import stuff
 import numpy as np
+import shutil
 import sys
 import os
 import torch
@@ -31,6 +32,12 @@ sys.path.append("CppToPython")
 sys.path.insert(0, '../Utilities/')
 
 import GeDiM4Py as gedim
+dir = "greedyResults"
+if not os.path.exists(dir):
+    os.makedirs(dir)
+
+complete_dir = os.getcwd()+"/"+dir
+
 os.chdir("CppToPython")
 lib = gedim.ImportLibrary("./release/GeDiM4Py.so")
 
@@ -186,3 +193,6 @@ def greedy(N_max, tol):
         delta_N = max_deltaN
 
     return [N, np.transpose(np.array(basis_functions))]
+
+pic_dir = "Images"
+shutil.copytree(pic_dir, complete_dir, dirs_exist_ok=True)
