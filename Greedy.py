@@ -49,23 +49,14 @@ discreteSpace = { 'Order': order, 'Type': 1, 'BoundaryConditionsType': [1, 2, 3,
 gedim.PlotMesh(mesh)
 gedim.PlotDofs(mesh, dofs, strongs)
 
-def Poisson_A():
-	return 1.
-def Poisson_B():
-	return 1.
-
 def Poisson_a(numPoints, points):
-	values = np.ones(numPoints) * Poisson_A()
+	values = np.ones(numPoints)
 	return values.ctypes.data
 
 def Poisson_b(numPoints, points):
 	values = np.zeros((2, numPoints))
 	matPoints = gedim.make_nd_matrix(points, (3, numPoints), np.double)
 	values[0,:] = matPoints[1,:]*(1.-matPoints[1,:])
-	return values.ctypes.data
-
-def Poisson_f(numPoints, points):
-	values = np.zeros(numPoints)
 	return values.ctypes.data
 
 def Poisson_weakTerm_down(numPoints, points):
@@ -75,8 +66,6 @@ def Poisson_weakTerm_down(numPoints, points):
 [stiffness, stiffnessStrong] = gedim.AssembleStiffnessMatrix(Poisson_a, problemData, lib)
 
 [advection, advectionStrong] = gedim.AssembleAdvectionMatrix(Poisson_b, problemData, lib)
-
-forcingTerm = gedim.AssembleForcingTerm(Poisson_f, problemData, lib)
 
 weakTerm_down = gedim.AssembleWeakTerm(Poisson_weakTerm_down, 2, problemData, lib)
 
@@ -122,29 +111,33 @@ def GramSchmidt(V, u, X):
         z = u - V @ (np.transpose(V) @ (X @ u))
     return z / normX(z, X)
 
+def ErrorEstimate():
+     return
+
+def InfSupConstant(mu):
+     return
 
 def greedy(X,N_max, tol):
     N = 0
     basis_functions = []
     B = np.empty((0,0))
-    deltaN = tol + 1.
+    delta_N = tol + 1.
     training_set_list = training_set.tolist()
     initial_muN = np.random.choice(len(training_set_list) - 1, 1)[0]
-    muN = training_set_list.pop(initial_muN)
+    mu_N = training_set_list.pop(initial_muN)
     invX = splu(X)
 
     print('Perfom greedy algorithm...')
-    while len(training_set_list) > 0 and N < N_max and deltaN > tol:
-        N = N + 1
-        print('\t', N,'/', N_max, '-', '{:.16e}'.format(np.mean(deltaN)), '/', '{:.16e}'.format(np.mean(tol)))
+    while len(training_set_list) > 0 and N < N_max and delta_N > tol:
+        N += 1
         snapshot = gedim.LUsolver(mu_N[0]*X+advection,mu_N[1]*weakTerm_down,lib)
         basis_function = GramSchmidt(B, snapshot, X)
         basis_functions.append(np.copy(basis_function))
         B = np.transpose(np.array(basis_functions))
         BX = np.transpose(B) @ X @ B
 
-        [AQN, fQN] = ProjectSystem(X, weakTerm_down, B)
-        [Cq1q2, dq1q2, Eq1q2] = OfflineResidual(AQH, fQH, B, invX)
+        [AQN, fQN] = ProjectSystem(X, weakTerm_down, B) # applica il cambio base
+        [C_11, d_11, d_12, E_11, E_12, E_22] = OfflineResidual(B, invX)
 
         counter = 0
         mu_selected_index = -1
@@ -158,7 +151,7 @@ def greedy(X,N_max, tol):
                 max_deltaN = deltaN_mu
                 mu_selected_index = counter
 
-            counter = counter + 1
+            counter += 1
 
         if mu_selected_index == -1:
             raise Exception('ERROR, parameter not found')
@@ -167,4 +160,3 @@ def greedy(X,N_max, tol):
         deltaN = max_deltaN
 
     return [N, np.transpose(np.array(basis_functions))]
-
