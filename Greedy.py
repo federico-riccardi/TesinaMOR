@@ -101,10 +101,10 @@ def GramSchmidt(V, u):
     return z / normX(z, X)
 
 def OfflineResidual(B):
-     C_11 = weakTerm_down.T @ (invX.solve(weakTerm_down)) # Xu = f_1 -> u = X^{-1} f_1 = invX.solve(f_1)
+     C_11 = np.array(weakTerm_down.T @ (invX.solve(weakTerm_down)), ndmin=2) # Xu = f_1 -> u = X^{-1} f_1 = invX.solve(f_1)
 
-     d_11 = B.T @ stiffness.T @ (invX.solve(weakTerm_down))
-     d_12 = B.T @ advection.T @ (invX.solve(weakTerm_down))
+     d_11 = np.array(B.T @ stiffness.T @ (invX.solve(weakTerm_down)), ndmin=2)
+     d_12 = np.array(B.T @ advection.T @ (invX.solve(weakTerm_down)), ndmin=2)
 
      E_11 = B.T @ stiffness.T @ (invX.solve(stiffness @ B))
      E_12 = B.T @ stiffness.T @ (invX.solve(advection @ B))
@@ -113,8 +113,8 @@ def OfflineResidual(B):
      
 
 def ErrorEstimate(mu, solN_mu, off_res, beta_mu):
-    pre_mult = [mu[1]**2, -2*mu[0]*mu[1]*solN_mu.T, -2*mu[1]*solN_mu.T, mu[0]**2*solN_mu.T, 2*mu[0]*solN_mu.T, solN_mu.T]
-    post_mult = [1., 1., 1., solN_mu, solN_mu, solN_mu]
+    pre_mult = [np.array([mu[1]**2]), -2*mu[0]*mu[1]*solN_mu.T, -2*mu[1]*solN_mu.T, mu[0]**2*solN_mu.T, 2*mu[0]*solN_mu.T, solN_mu.T]
+    post_mult = [np.array([1.]), np.array([1.]), np.array([1.]), solN_mu, solN_mu, solN_mu]
     error = 0.0
     for i in range(len(off_res)):
         error += pre_mult[i] @ off_res[i] @ post_mult[i]
@@ -139,8 +139,8 @@ def greedy(N_max, tol):
     print('Perfom greedy algorithm...')
     while len(training_set_list) > 0 and N < N_max and delta_N > tol:
         N += 1
-        snapshot = gedim.LUsolver(mu_N[0]*X+advection,mu_N[1]*weakTerm_down,lib)
-        basis_function = GramSchmidt(B, snapshot, X)
+        snapshot = gedim.LUSolver(mu_N[0]*X+advection,mu_N[1]*weakTerm_down,lib)
+        basis_function = GramSchmidt(B, snapshot)
         basis_functions.append(np.copy(basis_function))
         B = np.transpose(np.array(basis_functions))
         BX = np.transpose(B) @ X @ B
@@ -168,3 +168,5 @@ def greedy(N_max, tol):
         delta_N = max_deltaN
 
     return [N, np.transpose(np.array(basis_functions))]
+
+[N_basis, basis] = greedy(N_max, tol)
