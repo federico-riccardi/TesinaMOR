@@ -45,7 +45,7 @@ config = { 'GeometricTolerance': 1.0e-8 }
 gedim.Initialize(config, lib)
 
 order = 1
-meshSize = 0.001
+meshSize = 0.0001
 
 domain = { 'SquareEdge': 1.0, 'VerticesBoundaryCondition': [1,0,1,1], 'EdgesBoundaryCondition': [2,3,1,1], 'DiscretizationType': 1, 'MeshCellsMaximumArea': meshSize }
 [meshInfo, mesh] = gedim.CreateDomainSquare(domain, lib)
@@ -82,9 +82,6 @@ def Poisson_weakTerm_down(numPoints, points):
 
 weakTerm_down = gedim.AssembleWeakTerm(Poisson_weakTerm_down, 2, problemData, lib)
 
-solution = gedim.LUSolver(stiffness+advection, weakTerm_down, lib)
-gedim.PlotSolution(mesh, dofs, strongs, solution, np.zeros(problemData['NumberStrongs']))
-
 
 ### define the training set
 M = 100
@@ -94,7 +91,7 @@ P = np.array([mu1_range, mu2_range])
 
 training_set = np.random.uniform(low=P[:, 0], high=P[:, 1], size=(M, P.shape[0]))
 N_max = 20
-tol  = 1.e-2
+tol  = 1.e-7
 X = stiffness
 invX = splu(X)
 
@@ -108,10 +105,11 @@ def GramSchmidt(V, u):
     return z / normX(z, X)
 
 def OfflineResidual(B):
+     N = B.shape[1] # numero di elementi nella base
      C_11 = np.array(weakTerm_down.T @ (invX.solve(weakTerm_down)), ndmin=2) # Xu = f_1 -> u = X^{-1} f_1 = invX.solve(f_1)
 
-     d_11 = np.array(B.T @ stiffness.T @ (invX.solve(weakTerm_down)), ndmin=2)
-     d_12 = np.array(B.T @ advection.T @ (invX.solve(weakTerm_down)), ndmin=2)
+     d_11 = (np.array(B.T @ stiffness.T @ (invX.solve(weakTerm_down)), ndmin=2)).reshape((N,1)) #il cambio di shape è necessario perché altrimenti viene un vettore riga
+     d_12 = (np.array(B.T @ advection.T @ (invX.solve(weakTerm_down)), ndmin=2)).reshape((N,1))
 
      E_11 = B.T @ stiffness.T @ (invX.solve(stiffness @ B))
      E_12 = B.T @ stiffness.T @ (invX.solve(advection @ B))
@@ -125,7 +123,7 @@ def ErrorEstimate(mu, solN_mu, off_res, beta_mu):
     error = 0.0
     for i in range(len(off_res)):
         error += pre_mult[i] @ off_res[i] @ post_mult[i]
-    return np.sqrt(error)/beta_mu
+    return np.sqrt(np.abs(error))/beta_mu
 
 eigs, vecs = scipy.linalg.eig(stiffness.todense(), mass.todense())
 min_eig = np.min(eigs.real)
@@ -175,7 +173,17 @@ def greedy(N_max, tol):
         delta_N = max_deltaN
 
     return [N, np.transpose(np.array(basis_functions))]
-[N_basis, basis] = greedy(N_max, tol)
+[N_basis, B] = greedy(N_max, tol)
+print(N_basis)
+mu_1 = 1.
+mu_2 = -1.
+solution = gedim.LUSolver(mu_1*stiffness+advection, mu_2*weakTerm_down, lib)
+gedim.PlotSolution(mesh, dofs, strongs, solution, np.zeros(problemData['NumberStrongs']), title='Solution_3')
+u_RB = np.linalg.solve(mu_1*(B.T @ stiffness @ B) + (B.T @ advection @ B), mu_2*(B.T @ weakTerm_down))
+solution_RB = B @ u_RB
+gedim.PlotSolution(mesh, dofs, strongs, solution_RB, np.zeros(problemData['NumberStrongs']), title='Solution_RB_3')
+print(np.max(np.abs(solution-solution_RB)))
 
 pic_dir = "Images"
 shutil.copytree(pic_dir, complete_dir, dirs_exist_ok=True)
+
