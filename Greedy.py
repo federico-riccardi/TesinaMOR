@@ -105,16 +105,14 @@ def GramSchmidt(V, u):
     return z / normX(z, X)
 
 def OfflineResidual(B):
-     N = B.shape[1] # numero di elementi nella base
-     C_11 = np.array(weakTerm_down.T @ (invX.solve(weakTerm_down)), ndmin=2) # Xu = f_1 -> u = X^{-1} f_1 = invX.solve(f_1)
-
-     d_11 = (np.array(B.T @ stiffness.T @ (invX.solve(weakTerm_down)), ndmin=2)).reshape((N,1)) #il cambio di shape è necessario perché altrimenti viene un vettore riga
-     d_12 = (np.array(B.T @ advection.T @ (invX.solve(weakTerm_down)), ndmin=2)).reshape((N,1))
-
-     E_11 = B.T @ stiffness.T @ (invX.solve(stiffness @ B))
-     E_12 = B.T @ stiffness.T @ (invX.solve(advection @ B))
-     E_22 = B.T @ advection.T @ (invX.solve(advection @ B))
-     return [C_11, d_11, d_12, E_11, E_12, E_22]
+    N = B.shape[1] # numero di elementi nella base
+    C_11 = np.array(weakTerm_down.T @ (invX.solve(weakTerm_down)), ndmin=2) # Xu = f_1 -> u = X^{-1} f_1 = invX.solve(f_1)
+    d_11 = (np.array(B.T @ stiffness.T @ (invX.solve(weakTerm_down)), ndmin=2)).reshape((N,1)) #il cambio di shape è necessario perché altrimenti viene un vettore riga
+    d_12 = (np.array(B.T @ advection.T @ (invX.solve(weakTerm_down)), ndmin=2)).reshape((N,1))
+    E_11 = B.T @ stiffness.T @ (invX.solve(stiffness @ B))
+    E_12 = B.T @ stiffness.T @ (invX.solve(advection @ B))
+    E_22 = B.T @ advection.T @ (invX.solve(advection @ B))
+    return [C_11, d_11, d_12, E_11, E_12, E_22]
      
 
 def ErrorEstimate(mu, solN_mu, off_res, beta_mu):
