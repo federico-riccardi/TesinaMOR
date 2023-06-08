@@ -50,6 +50,7 @@ ap.add_argument("--points")
 args = vars(ap.parse_args())
 iterations = int(args['iterations'])
 #iterations= 10000
+
 coeff = [float(args['coeff1']), float(args['coeff2']), float(args['coeff3']), float(args['coeff4'])]
 #coeff = [10, 10, 500, 500]
 n_points = int(args['points'])

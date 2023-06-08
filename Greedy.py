@@ -74,6 +74,8 @@ def Poisson_weakTerm_down(numPoints, points):
 	values = np.ones(numPoints)
 	return values.ctypes.data
 
+print("Calcolo matrici")
+
 [stiffness, stiffnessStrong] = gedim.AssembleStiffnessMatrix(Poisson_a, problemData, lib)
 
 [advection, advectionStrong] = gedim.AssembleAdvectionMatrix(Poisson_b, problemData, lib)
@@ -82,7 +84,7 @@ def Poisson_weakTerm_down(numPoints, points):
 
 weakTerm_down = gedim.AssembleWeakTerm(Poisson_weakTerm_down, 2, problemData, lib)
 
-
+print("Calcolo training set")
 ### define the training set
 M = 100
 mu1_range = [0.1, 10.]
@@ -123,8 +125,11 @@ def ErrorEstimate(mu, solN_mu, off_res, beta_mu):
         error += pre_mult[i] @ off_res[i] @ post_mult[i]
     return np.sqrt(np.abs(error))/beta_mu
 
+print("A")
 eigs, vecs = scipy.linalg.eig(stiffness.todense(), mass.todense())
+print("b")
 min_eig = np.min(eigs.real)
+print("C")
 C_omega =  1 / np.sqrt(min_eig) #costante di Poincaré
 def InfSupConstant(mu):
     return mu[0]/(1+C_omega**2)
@@ -171,15 +176,17 @@ def greedy(N_max, tol):
         delta_N = max_deltaN
 
     return [N, np.transpose(np.array(basis_functions))]
+print("a")
 [N_basis, B] = greedy(N_max, tol)
 print(N_basis)
 mu_1 = 1.
 mu_2 = -1.
+
 solution = gedim.LUSolver(mu_1*stiffness+advection, mu_2*weakTerm_down, lib)
-gedim.PlotSolution(mesh, dofs, strongs, solution, np.zeros(problemData['NumberStrongs']), title='Solution_3')
+gedim.PlotSolution(mesh, dofs, strongs, solution, np.zeros(problemData['NumberStrongs']), title='Solution_FEM')
 u_RB = np.linalg.solve(mu_1*(B.T @ stiffness @ B) + (B.T @ advection @ B), mu_2*(B.T @ weakTerm_down))
 solution_RB = B @ u_RB
-gedim.PlotSolution(mesh, dofs, strongs, solution_RB, np.zeros(problemData['NumberStrongs']), title='Solution_RB_3')
+gedim.PlotSolution(mesh, dofs, strongs, solution_RB, np.zeros(problemData['NumberStrongs']), title='Solution_RB')
 print(np.max(np.abs(solution-solution_RB)))
 
 pic_dir = "Images"

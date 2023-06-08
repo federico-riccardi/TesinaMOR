@@ -7,6 +7,7 @@ import torch
 import torch.nn as nn
 from torch.autograd import Variable
 
+
 def PINN_funct(iterations, coeff, n_points, delta):
     bc_dict = dict(zip([1,2,3,4],[1,1,0,0])) #La chiave è il bordo, il valore è il tipo di condizione. 0 sta per Dirichlet, 1 sta per Neumann
     tol = 1e-4

@@ -14,3 +14,5 @@ for iter in data['iterations']:
             subprocess.run(["./PINN.py", "--coeff1", str(l[1]), "--coeff2", str(l[2]), "--coeff3", str(l[3]), "--coeff4", str(l[4]), "--iterations", str(iter), "--points", str(p)])
 
 print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+print("\n")
+

@@ -31,19 +31,22 @@ sys.path.insert(0, '../Utilities/')
 import GeDiM4Py as gedim
 import PINN_funct
 import Greedy_funct
+import FEM_funct
+
 
 
 #### Parameters PINN
 meshSize = 0.01
 order = 2
 iterations= 10000
-coeff = [10, 10, 500, 500]
+#coeff = [10, 10, 500, 500]
+coeff = [5, 3, 50, 100]
 n_points = 200
 delta = 0.1 #parametro per funzione cutoff
 
 ### PARAM GREEDY
 
-M = 200
+M = 1000
 N_max = 20
 tol  = 1.e-8
 
@@ -98,3 +101,8 @@ u_RB = np.linalg.solve(mu_1*(stiffness_RB) + (advection_RB), mu_2*(weakTerm_down
 solution_RB = B @ u_RB
 end_time_Greedy_online = time.time()
 gedim.PlotSolution(mesh, dofs, strongs, solution_RB, np.zeros(problemData['NumberStrongs']), title='Solution_RB')
+
+## FEM
+stiffness, advection, weakTerm_down = FEM_funct.FEM_funct(problemData, lib)
+solution = gedim.LUSolver(mu_1*stiffness+advection, mu_2*weakTerm_down, lib)
+gedim.PlotSolution(mesh, dofs, strongs, solution, np.zeros(problemData['NumberStrongs']), title='Solution_FEM')
