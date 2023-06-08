@@ -39,9 +39,9 @@ plotMesh = True
 #sys.path.append("PINN_funct.py")
 import PINN_funct
 
-iterations= 10000
+iterations= 1000
 coeff = [10, 10, 500, 500]
-n_points = 20000
+n_points = 200
 delta = 0.1 #parametro per funzione cutoff
 
 mse_table, net = PINN_funct.PINN_funct(iterations, coeff, n_points, delta)
@@ -54,6 +54,8 @@ x = np.ravel(ms_x).reshape(-1,1)
 y = np.ravel(ms_y).reshape(-1,1)
 pt_x = Variable(torch.from_numpy(x).float(), requires_grad=True)
 pt_y = Variable(torch.from_numpy(y).float(), requires_grad=True)
+print(pt_x)
+print(pt_x.shape)
 pt_u = net(pt_x, pt_y, .1*torch.ones((pt_x.shape[0],1)), -1.*torch.ones((pt_y.shape[0],1)))
 #u = pt_u.data.cpu().numpy()
 u = pt_u.numpy(force=True)
