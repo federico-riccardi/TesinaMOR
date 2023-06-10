@@ -33,7 +33,6 @@ import GeDiM4Py as gedim
 #Parameters
 meshSize = 0.01
 order = 2
-plotMesh = True
 
 import argparse
 
@@ -84,15 +83,9 @@ with open(complete_dir+'/loss.csv', 'w', newline='') as csvfile:
     domain = { 'SquareEdge': 1.0, 'VerticesBoundaryCondition': [1,1,1,1], 'EdgesBoundaryCondition': [2,1,1,1], 'DiscretizationType': 1, 'MeshCellsMaximumArea': meshSize }
     [meshInfo, mesh] = gedim.CreateDomainSquare(domain, lib)
 
-    if plotMesh:
-        gedim.PlotMesh(mesh)
-
     #BoundaryConditionsType:
     discreteSpace = { 'Order': order, 'Type': 1, 'BoundaryConditionsType': [1,2,3] }
     [problemData, dofs, strongs] = gedim.Discretize(discreteSpace, lib)
-
-    if plotMesh:
-        gedim.PlotDofs(mesh, dofs, strongs)
 
     np.random.seed(1234)
 
