@@ -49,9 +49,9 @@ pt_y_s = Variable(torch.from_numpy(np.array([strongs[1]]).T).float(), requires_g
 #solution = gedim.LUSolver(mu_1*stiffness+advection, mu_2*weakTerm_down, lib)
 #gedim.PlotSolution(mesh, dofs, strongs, solution, np.zeros(problemData['NumberStrongs']), title='Solution_FEM')
 
-##RUN PINN
+##RUN PINN [.1, 10]x[-1, 1]
 delta = 0.1
-parameters = [[1, 1], [7, 0.7], [5, 0], [3, -0.5], [0.1, 1]]
+parameters = [[1, 1], [7, 0.7], [5, 0], [3, -0.5], [0.1, 1], [.1, -1], [10, -1], [10, -1], [.5, .5], [6, -0.7]]
 # Open the file and load the file
 with open('/root/TesinaMOR/Configurazioni.yaml') as f:
     data = yaml.load(f, Loader=SafeLoader)
