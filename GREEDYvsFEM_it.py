@@ -6,7 +6,7 @@ import subprocess
 import FEM_funct
 import sys
 import os
-import PINN_funct
+import Greedy_funct
 import numpy as np
 import torch
 from torch.autograd import Variable
@@ -45,9 +45,11 @@ pt_y = Variable(torch.from_numpy(np.array([dofs[1]]).T).float(), requires_grad=T
 pt_x_s = Variable(torch.from_numpy(np.array([strongs[0]]).T).float(), requires_grad=True)
 pt_y_s = Variable(torch.from_numpy(np.array([strongs[1]]).T).float(), requires_grad=True)
 
-## Addestramento PINN e confronto con soluzione FEM su un sottoinsieme dello spazio dei parametri
-delta = 0.1
-parameters = [[1, 1], [7, 0.7], [5, 0], [3, -0.5], [0.1, 1], [.1, -1], [10, -1], [10, -1], [.5, .5], [6, -0.7]]
+## Costruzione ROM space con algoritmo Greedy e confronto con soluzione FEM su un sottoinsieme dello spazio dei parametri
+tol = 1.e-6
+N_max = 20
+M = 1000
+B, stiffness_RB, advection_RB, weakTerm_down_RB = Greedy_funct(problemData, lib, M, tol, N_max)
 # Open the file and load the file
 with open('/root/TesinaMOR/Configurazioni.yaml') as f:
     data = yaml.load(f, Loader=SafeLoader)

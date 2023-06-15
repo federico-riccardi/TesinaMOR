@@ -17,7 +17,7 @@ def FEM_funct(problemData, lib):
     def Poisson_b(numPoints, points):
         values = np.zeros((2, numPoints))
         matPoints = gedim.make_nd_matrix(points, (3, numPoints), np.double)
-        values[0,:] = matPoints[1,:]*(1.-matPoints[1,:])
+        values[0,:] = matPoints[1,:]*(1.-matPoints[1,:]) #campo di velocità [y(1-y), 0]
         return values.ctypes.data
 
     def Poisson_c(numPoints, points):
