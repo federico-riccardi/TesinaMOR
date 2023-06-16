@@ -36,4 +36,4 @@ def FEM_funct(problemData, lib):
 
     weakTerm_down = gedim.AssembleWeakTerm(Poisson_weakTerm_down, 2, problemData, lib)
 
-    return stiffness, advection, weakTerm_down
+    return stiffness, advection, mass, weakTerm_down

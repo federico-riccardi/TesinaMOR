@@ -37,7 +37,7 @@ discreteSpace = { 'Order': order, 'Type': 1, 'BoundaryConditionsType': [1, 2, 3,
 [problemData, dofs, strongs] = gedim.Discretize(discreteSpace, lib)
 
 ## FEM (posso farlo prima perché è affine)
-stiffness, advection, weakTerm_down = FEM_funct.FEM_funct(problemData, lib)
+stiffness, advection, mass, weakTerm_down = FEM_funct.FEM_funct(problemData, lib)
 pt_x = Variable(torch.from_numpy(np.array([dofs[0]]).T).float(), requires_grad=True)
 pt_y = Variable(torch.from_numpy(np.array([dofs[1]]).T).float(), requires_grad=True)
 pt_x_s = Variable(torch.from_numpy(np.array([strongs[0]]).T).float(), requires_grad=True)
@@ -77,7 +77,8 @@ with open('/root/TesinaMOR/Configurazioni.yaml') as f:
                         int_error = solution_FEM - solution_PINN
                         error = np.concatenate([int_error, solution_PINN_strong])
                         l_inf = LA.norm(error, np.inf)
-                        l_2 = LA.norm(error, 2)
+                        l_2 = np.sqrt(np.abs(int_error.T @ mass @ int_error))
+                        semi_h_1 = np.sqrt(np.abs(int_error.T @ stiffness @ int_error))
                         writer.writerow({"parameters": [mu_1, mu_2], "error_inf": l_inf, "error_2": l_2})
 
 
