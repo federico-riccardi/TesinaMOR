@@ -57,7 +57,7 @@ def PINN_funct(iterations, coeff, n_points, delta):
         return torch.zeros((x.shape[0],1))
     
     def cutoff(x):
-            return (x**2/delta**2 * (-2.*x/delta + 3.))*(x <= delta) + 1. * (x> delta)
+        return (x**2/delta**2 * (-2.*x/delta + 3.))*(x <= delta) + 1. * (x> delta)
     
     def f_pde(x,y,mu_1,mu_2):
         #f = 32.*mu_1*(y*(1-y) + x*(1-x)) + (1-x)*(16.*y**4 - 32.*y**3 + 16.*y**2)
@@ -87,7 +87,7 @@ def PINN_funct(iterations, coeff, n_points, delta):
         u_xx = torch.autograd.grad(u_x.sum(), x, create_graph=True)[0]
         u_y = torch.autograd.grad(u.sum(), y, create_graph=True)[0]
         u_yy = torch.autograd.grad(u_y.sum(), y, create_graph=True)[0]
-        pde = -mu_1*(u_xx + u_yy) + beta_1(x,y)*u_x + beta_2(x,y)*u_y
+        pde = mu_1*(u_xx + u_yy) + beta_1(x,y)*u_x + beta_2(x,y)*u_y
         return pde
 
     def R_dir(x,y,mu_1,mu_2,net):

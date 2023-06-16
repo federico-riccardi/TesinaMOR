@@ -33,7 +33,6 @@ meshSize = 0.001
 
 domain = { 'SquareEdge': 1.0, 'VerticesBoundaryCondition': [1,0,1,1], 'EdgesBoundaryCondition': [2,3,1,1], 'DiscretizationType': 1, 'MeshCellsMaximumArea': meshSize }
 [meshInfo, mesh] = gedim.CreateDomainSquare(domain, lib)
-print(meshInfo)
 
 discreteSpace = { 'Order': order, 'Type': 1, 'BoundaryConditionsType': [1, 2, 3, 3] }
 [problemData, dofs, strongs] = gedim.Discretize(discreteSpace, lib)
@@ -66,7 +65,7 @@ with open('/root/TesinaMOR/Configurazioni.yaml') as f:
                     if not os.path.exists(dir):
                         os.makedirs(dir)
                         with open(dir+'/error.csv', 'w', newline='') as csvfile:
-                            fieldnames = ['iterations', 'error_inf', 'error_2']
+                            fieldnames = ['iterations', 'error_inf', 'error_2', 'error_semi_H1']
                             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
                             writer.writeheader()
                     solution_FEM = gedim.LUSolver(mu_1*stiffness+advection, mu_2*weakTerm_down, lib)
@@ -80,12 +79,10 @@ with open('/root/TesinaMOR/Configurazioni.yaml') as f:
                     l_inf = LA.norm(error, np.inf)
                     l_2 = np.sqrt(np.abs(int_error.T @ mass @ int_error))
                     semi_h_1 = np.sqrt(np.abs(int_error.T @ stiffness @ int_error))
-                    print(iter)
-                    print()
                     with open(dir+'/error.csv', 'a', newline='') as csvfile:
-                        fieldnames = ['iterations', 'error_inf', 'error_2']
+                        fieldnames = ['iterations', 'error_inf', 'error_2', 'error_semi_H1']
                         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-                        writer.writerow({"iterations": iter, "error_inf": l_inf, "error_2": l_2})
+                        writer.writerow({"iterations": iter, "error_inf": l_inf, "error_2": l_2, "error_semi_H1": semi_h_1})
 
 
 print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")

@@ -56,7 +56,7 @@ with open('/root/TesinaMOR/Configurazioni.yaml') as f:
             if not os.path.exists(dir):
                 os.makedirs(dir)
             with open(dir+'/error.csv', 'w', newline='') as csvfile:
-                fieldnames = ['parameters', 'error_inf', 'error_2']
+                fieldnames = ['parameters', 'error_inf', 'error_2', 'error_semi_H1']
                 writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
                 writer.writeheader()
                 
@@ -79,7 +79,7 @@ with open('/root/TesinaMOR/Configurazioni.yaml') as f:
                         l_inf = LA.norm(error, np.inf)
                         l_2 = np.sqrt(np.abs(int_error.T @ mass @ int_error))
                         semi_h_1 = np.sqrt(np.abs(int_error.T @ stiffness @ int_error))
-                        writer.writerow({"parameters": [mu_1, mu_2], "error_inf": l_inf, "error_2": l_2})
+                        writer.writerow({"parameters": [mu_1, mu_2], "error_inf": l_inf, "error_2": l_2, "error_semi_H1": semi_h_1})
 
 
 print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")

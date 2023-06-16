@@ -21,6 +21,10 @@ for coeff in os.listdir("results_plot2"):
         fig_inf.add_trace(go.Scatter(x = df['iterations'], y = df['error_inf'], name="{}/{}".format(coeff, parameters), line = dict(dash=lines[flag])))
         fig_2.add_trace(go.Scatter(x = df['iterations'], y = df['error_2'], name="{}/{}".format(coeff, parameters), line = dict(dash=lines[flag])))
     flag += 1
+length = len(df['iterations'])
+print(length)
+fig_2.update_xaxes(tickvals=[df['iterations'][0:length-1]])
+fig_inf.update_xaxes(tickvals=[df['iterations']])
 
 app.layout = html.Div(children=[
     html.H1(children='Title 1'),
