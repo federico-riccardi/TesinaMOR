@@ -14,9 +14,9 @@ fig_inf = go.Figure(layout = go.Layout(title = "L_inf error PINN vs FEM", xaxis 
 fig_2 = go.Figure(layout = go.Layout(title = "L_2 error PINN vs FEM", xaxis = {'title':'parameters'}, yaxis = {'title':'error_2'}, showlegend=True))
 fig_1 = go.Figure(layout = go.Layout(title = "semi_H_1 error PINN vs FEM", xaxis = {'title':'parameters'}, yaxis = {'title':'error_2'}, showlegend=True))
 
-for iterations in os.listdir("results_plot1 copy"):
-    for coeff in os.listdir("results_plot1 copy/"+iterations):
-        df = pd.read_csv("results_plot1 copy/{}/{}/error.csv".format(iterations, coeff))
+for iterations in os.listdir("results_plot1"):
+    for coeff in os.listdir("results_plot1/"+iterations):
+        df = pd.read_csv("results_plot1/{}/{}/error.csv".format(iterations, coeff))
         fig_inf.add_trace(go.Scatter(x = df['parameters'], y = df['error_inf'], name="{}".format(coeff)))
         fig_2.add_trace(go.Scatter(x = df['parameters'], y = df['error_2'], name="{}".format(coeff)))
         fig_1.add_trace(go.Scatter(x = df['parameters'], y = df['error_semi_H1'], name="{}".format(coeff)))
