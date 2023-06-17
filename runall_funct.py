@@ -33,15 +33,14 @@ import PINN_funct
 import Greedy_funct
 import FEM_funct
 
-
+#### Parametri mesh
+meshSize = 0.0001
+order = 1
 
 #### Parameters PINN
-meshSize = 0.01
-order = 2
-iterations= 10000
-#coeff = [10, 10, 500, 500]
-coeff = [5, 3, 50, 100]
-n_points = 200
+iterations= 8000
+coeff = [3, 2, 4, 4] #trovato coi tentativi
+n_points = 15000
 delta = 0.1 #parametro per funzione cutoff
 
 ### PARAM GREEDY
@@ -54,37 +53,12 @@ tol  = 1.e-8
 mu_1 = 1.
 mu_2 = 1.
 
-start_time_PINN_offline = time.time()
-mse_table, net = PINN_funct.PINN_funct(iterations, coeff, n_points, delta)
-end_time_PINN_offline = time.time()
-
-fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
-x = np.arange(0,1,0.02)
-y = np.arange(0,1,0.02)
-ms_x, ms_y = np.meshgrid(x,y)
-x = np.ravel(ms_x).reshape(-1,1)
-y = np.ravel(ms_y).reshape(-1,1)
-pt_x = Variable(torch.from_numpy(x).float(), requires_grad=True)
-pt_y = Variable(torch.from_numpy(y).float(), requires_grad=True)
-
-start_time_PINN_online = time.time()
-pt_u = net(pt_x, pt_y, mu_1*torch.ones((pt_x.shape[0],1)), mu_2*torch.ones((pt_y.shape[0],1)))
-start_time_PINN_online = time.time()
-#u = pt_u.data.cpu().numpy()
-u = pt_u.numpy(force=True)
-ms_u = u.reshape(ms_x.shape)
-surf = ax.plot_surface(ms_x, ms_y, ms_u, cmap=cm.coolwarm, linewidth=0, antialiased=False)
-fig.savefig('fotoPINN.png')
-
-
+###Creazione mesh e spazio discreto
 os.chdir("CppToPython")
 lib = gedim.ImportLibrary("./release/GeDiM4Py.so")
 
 config = { 'GeometricTolerance': 1.0e-8 }
 gedim.Initialize(config, lib)
-
-order = 1
-meshSize = 0.001
 
 domain = { 'SquareEdge': 1.0, 'VerticesBoundaryCondition': [1,0,1,1], 'EdgesBoundaryCondition': [2,3,1,1], 'DiscretizationType': 1, 'MeshCellsMaximumArea': meshSize }
 [meshInfo, mesh] = gedim.CreateDomainSquare(domain, lib)
@@ -92,6 +66,35 @@ domain = { 'SquareEdge': 1.0, 'VerticesBoundaryCondition': [1,0,1,1], 'EdgesBoun
 discreteSpace = { 'Order': order, 'Type': 1, 'BoundaryConditionsType': [1, 2, 3, 3] }
 [problemData, dofs, strongs] = gedim.Discretize(discreteSpace, lib)
 
+###Tempo addestramento PINN
+start_time_PINN_offline = time.time()
+mse_table, net = PINN_funct.PINN_funct(iterations, coeff, n_points, delta)
+end_time_PINN_offline = time.time()
+
+### Plot PINN
+fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
+pt_x = Variable(torch.from_numpy(np.array([dofs[0]]).T).float(), requires_grad=True)
+pt_y = Variable(torch.from_numpy(np.array([dofs[1]]).T).float(), requires_grad=True)
+
+###Calcolo valore PINN nodi mesh
+start_time_PINN_online = time.time()
+pt_u = net(pt_x, pt_y, mu_1*torch.ones((pt_x.shape[0],1)), mu_2*torch.ones((pt_y.shape[0],1)))
+end_time_PINN_online = time.time()
+
+x = np.arange(0,1,0.02)
+y = np.arange(0,1,0.02)
+ms_x, ms_y = np.meshgrid(x,y)
+x = np.ravel(ms_x).reshape(-1,1)
+y = np.ravel(ms_y).reshape(-1,1)
+pt_x = Variable(torch.from_numpy(x).float(), requires_grad=True)
+pt_y = Variable(torch.from_numpy(y).float(), requires_grad=True)
+pt_u = net(pt_x, pt_y, mu_1*torch.ones((pt_x.shape[0],1)), mu_2*torch.ones((pt_y.shape[0],1)))
+u = pt_u.numpy(force=True)
+ms_u = u.reshape(ms_x.shape)
+surf = ax.plot_surface(ms_x, ms_y, ms_u, cmap=cm.coolwarm, linewidth=0, antialiased=False)
+fig.savefig('fotoPINN.png')
+
+###Tempo Greedy
 start_time_Greedy_offline = time.time()
 B, stiffness_RB, advection_RB, weakTerm_down_RB = Greedy_funct.Greedy_funct(problemData, lib, M, tol, N_max)
 end_time_Greedy_offline = time.time()
@@ -102,7 +105,35 @@ solution_RB = B @ u_RB
 end_time_Greedy_online = time.time()
 gedim.PlotSolution(mesh, dofs, strongs, solution_RB, np.zeros(problemData['NumberStrongs']), title='Solution_RB')
 
-## FEM
+###Tempo FEM
+start_time_FEM_offline = time.time()
 stiffness, advection, weakTerm_down = FEM_funct.FEM_funct(problemData, lib)
 solution = gedim.LUSolver(mu_1*stiffness+advection, mu_2*weakTerm_down, lib)
+end_time_FEM_offline = time.time()
 gedim.PlotSolution(mesh, dofs, strongs, solution, np.zeros(problemData['NumberStrongs']), title='Solution_FEM')
+
+#Print tempi e speedup
+
+time_PINN_offline = end_time_PINN_offline - start_time_PINN_offline
+time_PINN_online = end_time_PINN_online - start_time_PINN_online
+
+time_Greedy_offline = end_time_Greedy_offline - start_time_PINN_offline
+time_Greedy_online = end_time_PINN_offline - start_time_PINN_offline
+
+
+print('Time PINN offline= {}'.format(time_PINN_offline))
+print('Time Greedy offline= {}'.format(time_PINN_online))
+
+print('Time PINN online= {}'.format(end_time_PINN_online - start_time_PINN_online))
+print('Time Greedy online= {}'.format(end_time_Greedy_online - start_time_Greedy_online))
+
+time_FEM = end_time_FEM_offline - start_time_FEM_offline
+speed_up_PINN = time_FEM_offline/(end_time_PINN_online - start_time_PINN_online)
+
+print('Speed up PINN= {}'.format())
+print('Speed up Greedy= {}'.format((end_time_FEM_offline - start_time_FEM_offline)/(end_time_Greedy_online - start_time_Greedy_online))
+
+print('Time PINN offline= {}'.format(end_time_PINN_offline - start_time_PINN_offline))
+print('Time PINN offline= {}'.format(end_time_PINN_offline - start_time_PINN_offline))
+
+print('Time PINN offline= {}'.format(end_time_PINN_offline - start_time_PINN_offline))
