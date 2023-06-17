@@ -125,11 +125,8 @@ def ErrorEstimate(mu, solN_mu, off_res, beta_mu):
         error += pre_mult[i] @ off_res[i] @ post_mult[i]
     return np.sqrt(np.abs(error))/beta_mu
 
-print("A")
 eigs, vecs = scipy.linalg.eig(stiffness.todense(), mass.todense())
-print("b")
 min_eig = np.min(eigs.real)
-print("C")
 C_omega =  1 / np.sqrt(min_eig) #costante di Poincaré
 def InfSupConstant(mu):
     return mu[0]/(1+C_omega**2)

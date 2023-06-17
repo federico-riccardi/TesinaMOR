@@ -34,7 +34,7 @@ import Greedy_funct
 import FEM_funct
 
 #### Parametri mesh
-meshSize = 0.0001
+meshSize = 0.0005
 order = 1
 
 #### Parameters PINN
@@ -95,6 +95,7 @@ surf = ax.plot_surface(ms_x, ms_y, ms_u, cmap=cm.coolwarm, linewidth=0, antialia
 fig.savefig('fotoPINN.png')
 
 ###Tempo Greedy
+print("Greedy algorithm")
 start_time_Greedy_offline = time.time()
 B, stiffness_RB, advection_RB, weakTerm_down_RB = Greedy_funct.Greedy_funct(problemData, lib, M, tol, N_max)
 end_time_Greedy_offline = time.time()
@@ -107,7 +108,7 @@ gedim.PlotSolution(mesh, dofs, strongs, solution_RB, np.zeros(problemData['Numbe
 
 ###Tempo FEM
 start_time_FEM_offline = time.time()
-stiffness, advection, weakTerm_down = FEM_funct.FEM_funct(problemData, lib)
+stiffness, advection, mass, weakTerm_down = FEM_funct.FEM_funct(problemData, lib)
 solution = gedim.LUSolver(mu_1*stiffness+advection, mu_2*weakTerm_down, lib)
 end_time_FEM_offline = time.time()
 gedim.PlotSolution(mesh, dofs, strongs, solution, np.zeros(problemData['NumberStrongs']), title='Solution_FEM')
@@ -118,22 +119,26 @@ time_PINN_offline = end_time_PINN_offline - start_time_PINN_offline
 time_PINN_online = end_time_PINN_online - start_time_PINN_online
 
 time_Greedy_offline = end_time_Greedy_offline - start_time_PINN_offline
-time_Greedy_online = end_time_PINN_offline - start_time_PINN_offline
-
-
-print('Time PINN offline= {}'.format(time_PINN_offline))
-print('Time Greedy offline= {}'.format(time_PINN_online))
-
-print('Time PINN online= {}'.format(end_time_PINN_online - start_time_PINN_online))
-print('Time Greedy online= {}'.format(end_time_Greedy_online - start_time_Greedy_online))
+time_Greedy_online = end_time_Greedy_online - start_time_Greedy_online
 
 time_FEM = end_time_FEM_offline - start_time_FEM_offline
-speed_up_PINN = time_FEM_offline/(end_time_PINN_online - start_time_PINN_online)
 
-print('Speed up PINN= {}'.format())
-print('Speed up Greedy= {}'.format((end_time_FEM_offline - start_time_FEM_offline)/(end_time_Greedy_online - start_time_Greedy_online))
+speed_up_PINN_online = time_FEM/time_PINN_online
+speed_up_Greedy_online = time_FEM/time_Greedy_online
 
-print('Time PINN offline= {}'.format(end_time_PINN_offline - start_time_PINN_offline))
-print('Time PINN offline= {}'.format(end_time_PINN_offline - start_time_PINN_offline))
+speed_up_PINN_complete = time_FEM/(time_PINN_online + time_PINN_offline)
+speed_up_Greedy_complete = time_FEM/(time_Greedy_online + time_Greedy_offline)
 
-print('Time PINN offline= {}'.format(end_time_PINN_offline - start_time_PINN_offline))
+print('Time PINN offline= {}'.format(time_PINN_offline))
+print('Time Greedy offline= {}'.format(time_Greedy_offline))
+
+print('Time PINN online= {}'.format(time_PINN_online))
+print('Time Greedy online= {}'.format(time_Greedy_online))
+
+print('Speed up PINN online= {}'.format(speed_up_PINN_online))
+print('Speed up Greedy online= {}'.format(speed_up_Greedy_online))
+
+print('Speed up PINN online + offline= {}'.format(speed_up_PINN_complete))
+print('Speed up Greedy offline + online= {}'.format(speed_up_Greedy_complete))
+
+print('Time FEM= {}'.format(time_FEM))
