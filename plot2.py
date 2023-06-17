@@ -20,6 +20,7 @@ for coeff in os.listdir("results_plot_2"):
     for parameters in os.listdir("results_plot_2/"+coeff):
         df = pd.read_csv("results_plot_2/{}/{}/error.csv".format(coeff, parameters))
         fig_inf.add_trace(go.Scatter(x = df['iterations'], y = df['error_inf'], name="{}/{}".format(coeff, parameters), line = dict(dash=lines[flag])))
+        fig_1.add_trace(go.Scatter(x = df['iterations'], y = df['error_H1'], name="{}/{}".format(coeff, parameters), line = dict(dash=lines[flag])))
         fig_2.add_trace(go.Scatter(x = df['iterations'], y = df['error_2'], name="{}/{}".format(coeff, parameters), line = dict(dash=lines[flag])))
         fig_1.add_trace(go.Scatter(x = df['iterations'], y = df['error_semi_H1'], name="{}/{}".format(coeff, parameters), line = dict(dash=lines[flag])))
     flag += 1
