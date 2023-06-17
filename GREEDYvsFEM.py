@@ -33,7 +33,6 @@ meshSize = 0.001
 
 domain = { 'SquareEdge': 1.0, 'VerticesBoundaryCondition': [1,0,1,1], 'EdgesBoundaryCondition': [2,3,1,1], 'DiscretizationType': 1, 'MeshCellsMaximumArea': meshSize }
 [meshInfo, mesh] = gedim.CreateDomainSquare(domain, lib)
-print(meshInfo)
 
 discreteSpace = { 'Order': order, 'Type': 1, 'BoundaryConditionsType': [1, 2, 3, 3] }
 [problemData, dofs, strongs] = gedim.Discretize(discreteSpace, lib)
@@ -46,40 +45,44 @@ pt_x_s = Variable(torch.from_numpy(np.array([strongs[0]]).T).float(), requires_g
 pt_y_s = Variable(torch.from_numpy(np.array([strongs[1]]).T).float(), requires_grad=True)
 
 ## Costruzione ROM space con algoritmo Greedy e confronto con soluzione FEM su un sottoinsieme dello spazio dei parametri
-parameters = [[1, 1], [7, 0.7], [5, 0], [3, -0.5], [0.1, 1], [.1, -1], [10, -1], [10, -1], [.5, .5], [6, -0.7]]
+parameters = [[1, 1], [7, 0.7], [5, 0], [3, -0.5], [0.1, 1], [.1, -1], [10, -1], [.5, .5], [6, -0.7]]
 tol = 1.e-6
 N_max = 20
-M = 1000
-B, stiffness_RB, advection_RB, weakTerm_down_RB = Greedy_funct(problemData, lib, M, tol, N_max)
-# Open the file and load the file
-for combo in parameters:
-    print("combo = {}".format(combo))
-    mu_1 = float(combo[0])
-    mu_2 = float(combo[1])
-    dir = this_dir+"/results_plot_2/{}/{}".format(coeff, [mu_1, mu_2])
+M_val = [100, 250, 500, 1000, 2000]
+for M in M_val:
+    print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+    print("\n")
+    print("Greedy solution with {} points in the parametric space".format(M))
+    print("\n")
+    dir = this_dir+"/results_plot_Greedy/{}".format(M)
     if not os.path.exists(dir):
-    os.makedirs(dir)
+        os.makedirs(dir)
     with open(dir+'/error.csv', 'w', newline='') as csvfile:
-        fieldnames = ['iterations', 'error_inf', 'error_2']
+        fieldnames = ['parameters', 'error_inf', 'error_2', 'error_H1']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
-    solution_FEM = gedim.LUSolver(mu_1*stiffness+advection, mu_2*weakTerm_down, lib)
-    gedim.PlotSolution(mesh, dofs, strongs, solution_FEM, np.zeros(problemData['NumberStrongs']), title='Solution_FEM')
-    solution_Greedy_RB = LA.solve(mu_1*(B.T @ stiffness @ B) + (B.T @ advection @ B), mu_2*(B.T @ weakTerm_down))
-    solution_Greedy = B @ solution_Greedy_RB
-    gedim.PlotSolution(mesh, dofs, strongs, solution_Greedy, np.zeros(problemData['NumberStrongs']), title='Solution_RB')
+    B, stiffness_RB, advection_RB, weakTerm_down_RB = Greedy_funct.Greedy_funct(problemData, lib, M, tol, N_max)
+    # Open the file and load the file
+    for combo in parameters:
+        print("combo = {}".format(combo))
+        mu_1 = float(combo[0])
+        mu_2 = float(combo[1])
 
-    ##calcolo errore L^inf, L^2 e seminorma H^1
-    error = solution_FEM - solution_Greedy
-    l_inf = LA.norm(error, np.inf)
-    l_2 = np.sqrt(np.abs(error.T @ mass @ error))
-    semi_h_1 = np.sqrt(np.abs(error.T @ stiffness @ error))
-    print(iter)
-    print()
-    with open(dir+'/error.csv', 'a', newline='') as csvfile:
-        fieldnames = ['iterations', 'error_inf', 'error_2']
-        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-        writer.writerow({"iterations": iter, "error_inf": l_inf, "error_2": l_2})
+        solution_FEM = gedim.LUSolver(mu_1*stiffness+advection, mu_2*weakTerm_down, lib)
+        gedim.PlotSolution(mesh, dofs, strongs, solution_FEM, np.zeros(problemData['NumberStrongs']), title='Solution_FEM')
+        solution_Greedy_RB = LA.solve(mu_1*(B.T @ stiffness @ B) + (B.T @ advection @ B), mu_2*(B.T @ weakTerm_down))
+        solution_Greedy = B @ solution_Greedy_RB
+        gedim.PlotSolution(mesh, dofs, strongs, solution_Greedy, np.zeros(problemData['NumberStrongs']), title='Solution_RB')
+
+        ##calcolo errore L^inf, L^2 e seminorma H^1
+        error = solution_FEM - solution_Greedy
+        l_inf = LA.norm(error, np.inf)
+        l_2 = np.sqrt(np.abs(error.T @ mass @ error))
+        semi_h_1 = np.sqrt(np.abs(error.T @ stiffness @ error))
+        with open(dir+'/error.csv', 'a', newline='') as csvfile:
+            fieldnames = ['parameters', 'error_inf', 'error_2', 'error_H1']
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writerow({"parameters": str(combo), "error_inf": l_inf, "error_2": l_2, "error_H1": semi_h_1})
 
 
 print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")

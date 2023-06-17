@@ -12,6 +12,7 @@ app = Dash(__name__)
 
 fig_inf = go.Figure(layout = go.Layout(title = "L_inf error PINN vs FEM", xaxis = {'title':'iterations'}, yaxis = {'title':'error_inf'}, showlegend=True))
 fig_2 = go.Figure(layout = go.Layout(title = "L_2 error PINN vs FEM", xaxis = {'title':'iterations'}, yaxis = {'title':'error_2'}, showlegend=True))
+fig_1 = go.Figure(layout = go.Layout(title = "semi_H_1 error PINN vs FEM", xaxis = {'title':'parameters'}, yaxis = {'title':'error_H1_seminorm'}, showlegend=True))
 
 lines = ["dash", "solid"]
 flag = 0
@@ -19,6 +20,7 @@ for coeff in os.listdir("results_plot2"):
     for parameters in os.listdir("results_plot2/"+coeff):
         df = pd.read_csv("results_plot2/{}/{}/error.csv".format(coeff, parameters))
         fig_inf.add_trace(go.Scatter(x = df['iterations'], y = df['error_inf'], name="{}/{}".format(coeff, parameters), line = dict(dash=lines[flag])))
+        fig_1.add_trace(go.Scatter(x = df['iterations'], y = df['error_H1'], name="{}/{}".format(coeff, parameters), line = dict(dash=lines[flag])))
         fig_2.add_trace(go.Scatter(x = df['iterations'], y = df['error_2'], name="{}/{}".format(coeff, parameters), line = dict(dash=lines[flag])))
     flag += 1
 length = len(df['iterations'])
@@ -39,6 +41,10 @@ app.layout = html.Div(children=[
     dcc.Graph(
         id='example-graph',
         figure=fig_2
+    ),
+    dcc.Graph(
+        id='example-graph',
+        figure=fig_1
     )
 ])
 

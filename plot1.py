@@ -12,7 +12,7 @@ app = Dash(__name__)
 
 fig_inf = go.Figure(layout = go.Layout(title = "L_inf error PINN vs FEM", xaxis = {'title':'parameters'}, yaxis = {'title':'error_inf'}, showlegend=True))
 fig_2 = go.Figure(layout = go.Layout(title = "L_2 error PINN vs FEM", xaxis = {'title':'parameters'}, yaxis = {'title':'error_2'}, showlegend=True))
-fig_1 = go.Figure(layout = go.Layout(title = "semi_H_1 error PINN vs FEM", xaxis = {'title':'parameters'}, yaxis = {'title':'error_2'}, showlegend=True))
+fig_1 = go.Figure(layout = go.Layout(title = "semi_H_1 error PINN vs FEM", xaxis = {'title':'parameters'}, yaxis = {'title':'error_H1_seminorm'}, showlegend=True))
 
 for iterations in os.listdir("results_plot1"):
     for coeff in os.listdir("results_plot1/"+iterations):
