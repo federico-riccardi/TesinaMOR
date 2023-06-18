@@ -32,19 +32,18 @@ def Greedy_funct(problemData, lib, M, tol, N_max):
 
     [advection, advectionStrong] = gedim.AssembleAdvectionMatrix(Poisson_b, problemData, lib)
 
-    [mass, massStrong] = gedim.AssembleReactionMatrix(Poisson_c, problemData, lib) # serve solo per calcolare la costante di Poincaré   q
+    [mass, massStrong] = gedim.AssembleReactionMatrix(Poisson_c, problemData, lib) # serve solo per calcolare la costante di Poincaré
 
     weakTerm_down = gedim.AssembleWeakTerm(Poisson_weakTerm_down, 2, problemData, lib)
 
 
-    ### define the training set
+    ### Spazio dei parametri e training set
     mu1_range = [0.1, 10.]
     mu2_range = [-1., 1.]
     P = np.array([mu1_range, mu2_range])
-
     training_set = np.random.uniform(low=P[:, 0], high=P[:, 1], size=(M, P.shape[0]))
 
-
+    # Definizione prodotti scalari, ortonormalizzazione, residui ed errori
     X = stiffness
     invX = splu(X)
 
@@ -81,6 +80,7 @@ def Greedy_funct(problemData, lib, M, tol, N_max):
     def InfSupConstant(mu):
         return mu[0]/(1+C_omega**2)
 
+    #Inizio costruzione ROM
     N = 0
     basis_functions = []
     B = np.empty((0,0))

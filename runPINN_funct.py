@@ -32,8 +32,8 @@ sys.path.insert(0, '../Utilities/')
 import GeDiM4Py as gedim
 
 #Parameters
-meshSize = 0.01
-order = 2
+meshSize = 0.001
+order = 1
 plotMesh = True
 
 #sys.path.append("PINN_funct.py")

@@ -73,9 +73,9 @@ with open('/root/TesinaMOR/Configurazioni.yaml') as f:
                     solution_PINN = net(pt_x, pt_y, mu_1*torch.ones((pt_x.shape[0],1)), mu_2*torch.ones((pt_y.shape[0],1))).detach().numpy().T[0]
                     solution_PINN_strong = net(pt_x_s, pt_y_s, mu_1*torch.ones((pt_x_s.shape[0],1)), mu_2*torch.ones((pt_y_s.shape[0],1))).detach().numpy().T[0]
 
-                    ##calcolo errore L^inf
+                    ## Calcolo errori
                     int_error = solution_FEM - solution_PINN
-                    error = np.concatenate([int_error, solution_PINN_strong])
+                    error = np.concatenate([int_error, solution_PINN_strong]) #l'errore L^inf tiene conto anche del dato al bordo di Dirichlet
                     l_inf = LA.norm(error, np.inf)
                     l_2 = np.sqrt(np.abs(int_error.T @ mass @ int_error))
                     semi_h_1 = np.sqrt(np.abs(int_error.T @ stiffness @ int_error))

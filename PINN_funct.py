@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 #%%
+## Funzione che restituisce il PINN
 
 import os
 import numpy as np
@@ -59,29 +60,22 @@ def PINN_funct(iterations, coeff, n_points, delta):
     def cutoff(x):
         return (x**2/delta**2 * (-2.*x/delta + 3.))*(x <= delta) + 1. * (x> delta)
     
-    def f_pde(x,y,mu_1,mu_2):
-        #f = 32.*mu_1*(y*(1-y) + x*(1-x)) + (1-x)*(16.*y**4 - 32.*y**3 + 16.*y**2)
-        #return f
-        return torch.zeros((x.shape[0],1)) #problema esatto
-    
+    def f_pde(x,y,mu_1,mu_2): 
+        return torch.zeros((x.shape[0],1)) 
     def f_bc_1(x,y,mu_1,mu_2):
-        return mu_2*cutoff(x) #problema esatto
-        #return torch.zeros((x.shape[0],1)) 
+        return mu_2*cutoff(x) 
 
     def f_bc_2(x,y,mu_1,mu_2):
-        #return mu_2*(1.-y)
-        return torch.zeros((x.shape[0],1)) #problema esatto
+        return torch.zeros((x.shape[0],1))
     
     def f_bc_3(x,y,mu_1,mu_2):
-        return torch.zeros((x.shape[0],1)) #problema esatto
-        #return x**2
+        return torch.zeros((x.shape[0],1))
     
     def f_bc_4(x,y,mu_1,mu_2):
-        return torch.zeros((x.shape[0],1)) #problema esatto
+        return torch.zeros((x.shape[0],1)) 
 
         
-    def R_pde(x, y, mu_1, mu_2, net): 
-        '''residuo pde'''
+    def R_pde(x, y, mu_1, mu_2, net): #Valutazione PDE
         u = net(x,y,mu_1,mu_2)
         u_x = torch.autograd.grad(u.sum(), x, create_graph=True)[0]
         u_xx = torch.autograd.grad(u_x.sum(), x, create_graph=True)[0]
@@ -90,27 +84,20 @@ def PINN_funct(iterations, coeff, n_points, delta):
         pde = mu_1*(u_xx + u_yy) + beta_1(x,y)*u_x + beta_2(x,y)*u_y
         return pde
 
-    def R_dir(x,y,mu_1,mu_2,net):
+    def R_dir(x,y,mu_1,mu_2,net): #Valutazione al bordo Dirichlet
         return net(x,y,mu_1,mu_2)
     
-    def R_neu(x,y,mu_1,mu_2,net,n_x,n_y):
+    def R_neu(x,y,mu_1,mu_2,net,n_x,n_y): #Valutazione al bordo Neumann
         u = net(x,y,mu_1,mu_2)
         u_x = torch.autograd.grad(u.sum(), x, create_graph=True)[0]
         u_y = torch.autograd.grad(u.sum(), y, create_graph=True)[0]
         normal_der = mu_1*(u_x*n_x + u_y*n_y)
         return normal_der
     
+    #Inizio addestramento rete
     net = Net()
     mse_cost_function = torch.nn.MSELoss() # Mean squared error
     optimizer = torch.optim.Adam(net.parameters())
-
-    #PRIMO TENTATIVO: facciamo finta che il problema sia in 4 dimensioni e alleniamo la rete esattamente come nel caso 2d, cioè mu_1 e mu_2 
-    #si considerano delle variabili esattamente come x e y
-
-    #Data from boundary condition 1:bordo inferiore 2:bordo destro 3: bordo superiore 4: bordo sinistro
-
-    #I nodi di Dirichlet non vanno ricreati perché non sono dof, i Neumann invece, come i punti nel dominio, sono dof e quindi per allenare
-    #la rete vanno cambiati ad ogni iterazione
     loss = 5
     mse_table = np.zeros([iterations,6])
     epoch = 0
@@ -229,7 +216,6 @@ def PINN_funct(iterations, coeff, n_points, delta):
         mse_table[epoch, 5] = loss
         loss.backward()
         optimizer.step()
-        #print('epoch:',epoch,' mse',mse_table[epoch,:])
         if epoch % (iterations//10) == 0: #stampa la barra di caricamento
             print('|', '☻'*(epoch//(iterations//10) + 1), ' '*(10 - (epoch//(iterations//10) + 1)), '|')
         epoch += 1

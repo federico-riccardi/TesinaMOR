@@ -91,7 +91,7 @@ pt_y = Variable(torch.from_numpy(y).float(), requires_grad=True)
 pt_u = net(pt_x, pt_y, mu_1*torch.ones((pt_x.shape[0],1)), mu_2*torch.ones((pt_y.shape[0],1)))
 u = pt_u.numpy(force=True)
 ms_u = u.reshape(ms_x.shape)
-surf = ax.plot_surface(ms_x, ms_y, ms_u, cmap=cm.coolwarm, linewidth=0, antialiased=False)
+surf = ax.plot_surface(ms_x, ms_y, ms_u, cmap=cm.coolwarm_r, linewidth=0, antialiased=False)
 fig.savefig('fotoPINN.png')
 
 ###Tempo Greedy

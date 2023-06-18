@@ -39,14 +39,10 @@ discreteSpace = { 'Order': order, 'Type': 1, 'BoundaryConditionsType': [1, 2, 3,
 
 ## Creazioni matrici sistema FEM (posso farlo prima perché è affine) e versione tensor dei nodi della mesh
 stiffness, advection, mass, weakTerm_down = FEM_funct.FEM_funct(problemData, lib)
-pt_x = Variable(torch.from_numpy(np.array([dofs[0]]).T).float(), requires_grad=True)
-pt_y = Variable(torch.from_numpy(np.array([dofs[1]]).T).float(), requires_grad=True)
-pt_x_s = Variable(torch.from_numpy(np.array([strongs[0]]).T).float(), requires_grad=True)
-pt_y_s = Variable(torch.from_numpy(np.array([strongs[1]]).T).float(), requires_grad=True)
 
 ## Costruzione ROM space con algoritmo Greedy e confronto con soluzione FEM su un sottoinsieme dello spazio dei parametri
 parameters = [[1, 1], [7, 0.7], [5, 0], [3, -0.5], [0.1, 1], [.1, -1], [10, -1], [.5, .5], [6, -0.7]]
-tol = 1.e-6
+tol = 1.e-8
 N_max = 20
 M_val = [100, 250, 500, 1000, 2000]
 for M in M_val:
