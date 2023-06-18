@@ -102,18 +102,35 @@ for mu in training_set_list:
     solution_FEM = gedim.LUSolver(mu_1*stiffness+advection, mu_2*weakTerm_down, lib)
 
     ##calcolo errore L^inf
-    error = solution_FEM - solution_PINN
-    l_inf_PINN = LA.norm(error, np.inf)
-    l_2_PINN = np.sqrt(np.abs(error.T @ mass @ error))
-    semi_h_1_PINN = np.sqrt(np.abs(error.T @ stiffness @ error))
+    error_PINN = solution_FEM - solution_PINN
+    l_inf_PINN = LA.norm(error_PINN, np.inf)
+    l_2_PINN = np.sqrt(np.abs(error_PINN.T @ mass @ error_PINN))
+    semi_h_1_PINN = np.sqrt(np.abs(error_PINN.T @ stiffness @ error_PINN))
     err_2_PINN.append(l_2_PINN)
     err_inf_PINN.append(l_inf_PINN)
     err_H1_PINN.append(semi_h_1_PINN)
     error_Greedy = solution_FEM - solution_Greedy
-    l_inf_Greedy = LA.norm(error, np.inf)
-    l_2_Greedy = np.sqrt(np.abs(error.T @ mass @ error))
-    semi_h_1_Greedy = np.sqrt(np.abs(error.T @ stiffness @ error))
+    l_inf_Greedy = LA.norm(error_Greedy, np.inf)
+    l_2_Greedy = np.sqrt(np.abs(error_Greedy.T @ mass @ error_Greedy))
+    semi_h_1_Greedy = np.sqrt(np.abs(error_Greedy.T @ stiffness @ error_Greedy))
     err_2_Greedy.append(l_2_Greedy)
     err_inf_Greedy.append(l_inf_Greedy)
     err_H1_Greedy.append(semi_h_1_Greedy)
 
+print("mean of the L2 error PINN = {}".format(np.mean(np.array(err_2_PINN))))
+print("std of the L2 error PINN = {}".format(np.std(np.array(err_2_PINN))))
+
+print("mean of the Linf error PINN = {}".format(np.mean(np.array(err_inf_PINN))))
+print("std of the Linf error PINN = {}".format(np.std(np.array(err_inf_PINN))))
+
+print("mean of the H1 error PINN = {}".format(np.mean(np.array(err_H1_PINN))))
+print("std of the H1 error PINN = {}".format(np.std(np.array(err_H1_PINN))))
+
+print("mean of the L2 error Greedy = {}".format(np.mean(np.array(err_2_Greedy))))
+print("std of the L2 error Greedy = {}".format(np.std(np.array(err_2_Greedy))))
+
+print("mean of the Linf error Greedy = {}".format(np.mean(np.array(err_inf_Greedy))))
+print("std of the Linf error Greedy = {}".format(np.std(np.array(err_inf_Greedy))))
+
+print("mean of the H1 error Greedy = {}".format(np.mean(np.array(err_H1_Greedy))))
+print("std of the H1 error Greedy = {}".format(np.std(np.array(err_H1_Greedy))))

@@ -51,7 +51,7 @@ tol  = 1.e-8
 
 ## PARAM SOL
 mu_1 = 1.
-mu_2 = 1.
+mu_2 = -1.
 
 ###Creazione mesh e spazio discreto
 os.chdir("CppToPython")
